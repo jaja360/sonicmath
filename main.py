@@ -1,6 +1,7 @@
 import pygame
 
 from asset_paths import get_music_path
+from background import Background
 from level_config import build_level_config
 from music_player import MusicPlayer
 
@@ -21,6 +22,10 @@ def main():
     level_config = build_level_config(level)
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    background = Background(SCREEN_WIDTH, SCENE_HEIGHT, HUD_HEIGHT)
+    background.set_background(level_config.background_name)
+    background.speed = level_config.speed
+
     music_player = MusicPlayer()
     music_player.play(get_music_path(level_config.music_name))
 
@@ -34,9 +39,11 @@ def main():
             if event.type == pygame.QUIT:
                 return
 
+        background.update(dt)
         updatable.update(dt)
 
         screen.fill(HUD_BACKGROUND_COLOR)
+        background.draw(screen)
         pygame.draw.line(screen, HUD_BORDER_COLOR, (0, HUD_HEIGHT), (SCREEN_WIDTH, HUD_HEIGHT), 4)
         for d in drawable:
             d.draw(screen)
