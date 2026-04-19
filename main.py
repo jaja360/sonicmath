@@ -4,6 +4,7 @@ from asset_paths import get_music_path
 from background import Background
 from level_config import build_level_config
 from music_player import MusicPlayer
+from sonic import Sonic
 
 SCREEN_WIDTH = 1600
 HUD_HEIGHT = 240
@@ -31,6 +32,11 @@ def main():
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
+
+    Sonic.containers = (updatable, drawable)
+
+    sonic = Sonic(ground_y=background.ground_y)
+    sonic.set_speed(level_config.speed)
 
     clock = pygame.time.Clock()
     while True:
