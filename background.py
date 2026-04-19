@@ -40,6 +40,9 @@ class Background:
     def set_level(self, level):
         self.set_background(f"lv{level}")
 
+    def set_speed(self, speed):
+        self.speed = speed
+
     def update(self, dt):
         self.x -= self.speed * dt
         if self.x <= -self.tile_width:
