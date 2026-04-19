@@ -1,0 +1,10 @@
+[project]
+name = "sonicmath"
+version = "0.1.0"
+description = "Small python game to practice math skills"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "pillow>=11.2.1",
+    "pygame==2.6.1",
+]
