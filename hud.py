@@ -141,7 +141,7 @@ class Hud:
     def _draw_question(self, rect, state, is_question_answered):
         label = self.text_font.render("Question", True, MUTED_TEXT_COLOR)
         color = QUESTION_CORRECT_COLOR if is_question_answered else QUESTION_COLOR
-        question = self.question_font.render(state.question, True, color)
+        question = self.question_font.render(state.current_problem.text, True, color)
         self.surface.blit(label, (rect.x, rect.y))
         question_rect = question.get_rect(midleft=(rect.x, rect.y + 78))
         question_rect.left = rect.x

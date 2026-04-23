@@ -4,8 +4,8 @@ from enum import Enum, auto
 
 from asset_paths import get_music_path
 from background import Background
-from level_config import build_level_config
-from math_problem import generate_problem
+from level_config import LevelConfig, build_level_config
+from math_problem import MathProblem, generate_problem
 from music_player import MusicPlayer
 from obstacle import Obstacle
 from power_down import PowerDown
@@ -52,7 +52,6 @@ class GameState:
     correct_answers: int
     status: Status
     status_turns: int
-    question: str
     answer_text: str
     background: Background
     music_player: MusicPlayer
@@ -66,8 +65,8 @@ class GameState:
     next_hit_immune: bool = False
     current_hazard: Obstacle | PowerDown | None = None
     current_power_up: PowerUp | None = None
-    level_config: object = None
-    current_problem: object = None
+    level_config: LevelConfig = None
+    current_problem: MathProblem = None
     is_answer_pending: bool = False
 
 
@@ -96,7 +95,6 @@ def refresh_speeds(state):
 
 def advance_problem(state):
     state.current_problem = generate_problem(state.level_config)
-    state.question = state.current_problem.text
     state.answer_text = ""
     state.is_answer_pending = False
 
@@ -241,7 +239,6 @@ def create_initial_gamestate(screen_width, scene_height, hud_height, options):
         correct_answers=0,
         status=Status.NORMAL,
         status_turns=0,
-        question="1+1",
         answer_text="",
         background=background,
         music_player=music_player,
