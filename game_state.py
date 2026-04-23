@@ -22,6 +22,12 @@ class RunState(Enum):
 
 
 @dataclass
+class GameOptions:
+    sound_enabled: bool = True
+    start_level: int = 0
+
+
+@dataclass
 class GameState:
     level: int
     hud_data: HudData
@@ -75,13 +81,13 @@ def resolve_correct_answer(state):
     advance_problem(state)
 
 
-def create_initial_gamestate(screen_width, scene_height, hud_height):
+def create_initial_gamestate(screen_width, scene_height, hud_height, options):
     hud_data = HudData()
-    music_player = MusicPlayer()
+    music_player = MusicPlayer(sound_enabled=options.sound_enabled)
     background = Background(screen_width, scene_height, hud_height)
     sonic = Sonic(ground_y=background.ground_y)
     state = GameState(
-        level=0,
+        level=options.start_level,
         hud_data=hud_data,
         background=background,
         music_player=music_player,

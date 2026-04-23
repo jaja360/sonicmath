@@ -26,5 +26,12 @@ uv install
 
 To start the game, simply run the following command in your terminal:
 ```bash
-uv run
+uv run python main.py
+```
+
+You can also start the game with optional flags:
+```bash
+uv run python main.py --no-sound
+uv run python main.py --start-level 10
+uv run python main.py --no-sound --start-level 10
 ```

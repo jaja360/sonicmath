@@ -2,8 +2,12 @@ import pygame
 
 
 class MusicPlayer:
-    def __init__(self):
+    def __init__(self, sound_enabled=True):
         self.current_path = None
+        self.sound_enabled = sound_enabled
+
+        if not self.sound_enabled:
+            return
 
         try:
             pygame.mixer.init()
@@ -14,6 +18,9 @@ class MusicPlayer:
             print(f"Audio disabled: {exc}")
 
     def play(self, music_path, loops=-1):
+        if not self.sound_enabled:
+            return
+
         if music_path == self.current_path:
             return
 
@@ -25,5 +32,8 @@ class MusicPlayer:
             print(f"Audio disabled: could not play {music_path}: {exc}")
 
     def stop(self):
+        if not self.sound_enabled:
+            return
+
         pygame.mixer.music.stop()
         self.current_path = None

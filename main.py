@@ -1,9 +1,12 @@
+import argparse
+
 import pygame
 
 from background import Background
 from game_state import (
     clear_inactive_obstacle,
     create_initial_gamestate,
+    GameOptions,
     handle_obstacle_collisions,
     RunState,
     spawn_obstacle,
@@ -26,6 +29,17 @@ ENDGAME_TITLE_COLOR = (255, 232, 130)
 ENDGAME_TITLE_SHADOW = (52, 32, 0)
 ENDGAME_TEXT_COLOR = (230, 239, 255)
 ENDGAME_ACCENT_COLOR = (118, 198, 255)
+MAX_START_LEVEL = 24
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-sound", action="store_true", help="disable music playback")
+    parser.add_argument("--start-level", type=int, default=0, help="start the first run at this level")
+    args = parser.parse_args()
+    if not 0 <= args.start_level <= MAX_START_LEVEL:
+        parser.error(f"--start-level must be between 0 and {MAX_START_LEVEL}")
+    return args
 
 
 def draw_game_over(screen):
@@ -68,13 +82,17 @@ def draw_endgame(screen, state):
     screen.blit(prompt, prompt_rect)
 
 
-def reset_game(updatable, drawable):
+def reset_game(updatable, drawable, options):
     updatable.empty()
     drawable.empty()
-    return create_initial_gamestate(SCREEN_WIDTH, SCENE_HEIGHT, HUD_HEIGHT)
+    return create_initial_gamestate(SCREEN_WIDTH, SCENE_HEIGHT, HUD_HEIGHT, options)
 
 
 def main():
+    args = parse_args()
+    initial_options = GameOptions(sound_enabled=not args.no_sound, start_level=args.start_level)
+    restart_options = GameOptions(sound_enabled=not args.no_sound)
+
     print(f"Starting SonicMath with pygame version {pygame.version.ver}")
     print(f"Screen width: {SCREEN_WIDTH}\nScreen height: {SCREEN_HEIGHT}")
     pygame.init()
@@ -88,7 +106,7 @@ def main():
     Sonic.containers = (updatable, drawable)
 
     hud = Hud(SCREEN_WIDTH, HUD_HEIGHT)
-    state = reset_game(updatable, drawable)
+    state = reset_game(updatable, drawable, initial_options)
 
     clock = pygame.time.Clock()
     while True:
@@ -99,7 +117,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if state.run_state != RunState.PLAYING:
                     if event.key == pygame.K_RETURN:
-                        state = reset_game(updatable, drawable)
+                        state = reset_game(updatable, drawable, restart_options)
                     continue
                 if event.key == pygame.K_BACKSPACE:
                     state.hud_data.answer_text = state.hud_data.answer_text[:-1]
