@@ -34,5 +34,7 @@ You can also start the game with optional flags:
 ```bash
 uv run python main.py --no-sound
 uv run python main.py --start-level 10
+uv run python main.py --start-hp 15
 uv run python main.py --no-sound --start-level 10
+uv run python main.py --start-level 10 --start-hp 30
 ```
