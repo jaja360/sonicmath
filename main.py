@@ -4,15 +4,20 @@ import pygame
 from background import Background
 from game_state import (
     clear_inactive_obstacle,
+    clear_inactive_power_up,
     create_initial_gamestate,
     GameOptions,
     handle_obstacle_collisions,
+    handle_power_up_collection,
     RunState,
     spawn_obstacle,
+    spawn_power_up,
     submit_answer,
 )
 from hud import Hud
 from obstacle import Obstacle
+from power_down import PowerDown
+from power_up import PowerUp
 from sonic import Sonic
 
 SCREEN_WIDTH = 1600
@@ -144,6 +149,8 @@ def main():
     drawable = pygame.sprite.Group()
     Background.containers = (updatable, drawable)
     Obstacle.containers = (updatable, drawable)
+    PowerDown.containers = (updatable, drawable)
+    PowerUp.containers = (updatable, drawable)
     Sonic.containers = (updatable, drawable)
 
     hud = Hud(SCREEN_WIDTH, HUD_HEIGHT)
@@ -181,10 +188,14 @@ def main():
 
         if state.run_state == RunState.PLAYING:
             handle_obstacle_collisions(state)
+            handle_power_up_collection(state)
             if state.background.did_wrap:
                 spawn_obstacle(state, SCREEN_WIDTH)
+            if state.background.did_mid_cycle:
+                spawn_power_up(state, SCREEN_WIDTH)
             updatable.update(dt)
             clear_inactive_obstacle(state)
+            clear_inactive_power_up(state)
         elif state.run_state in {RunState.GAME_OVER, RunState.ENDGAME} and not state.sonic.is_animation_complete():
             state.sonic.update(dt)
 

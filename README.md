@@ -13,6 +13,29 @@ take too long, Sonic will hit the obstacle and lose some of his health. The game
 ends when Sonic's health reaches zero. Press `ESC` at any time during a run to
 pause and resume the game.
 
+## Items
+
+Power-ups spawn in a separate lane and are collected automatically on contact.
+They use their own spawn window, so they appear between hazards instead of at
+the same time. Power-downs replace some hazard spawns; answer correctly to jump
+over them and avoid their effect.
+
+### Implemented power-ups
+
+- Red potion: restore 10 HP
+- Blue potion: restore 20 HP
+- Coin+: doubles score reward for the next 5 cleared hazards
+- Stopwatch: slows the game for the next 5 cleared hazards
+- Red gem: ignores the next hit
+
+### Implemented power-downs
+
+- Fire: burned for 5 clears, lose 1 HP after each cleared hazard
+- Mushroom: poisoned for 5 clears, lose 2 HP after each cleared hazard
+- Crossed coin: halves score reward for the next 5 cleared hazards
+- Grey bomb: speeds up the game for the next 5 cleared hazards
+- Vortex: clears all active temporary effects
+
 ## Installation
 
 To run SonicMath, you will need to have Python installed on your computer.

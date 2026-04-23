@@ -18,6 +18,7 @@ class Background(pygame.sprite.Sprite):
         self.speed = 150
         self.current_name = ""
         self.did_wrap = True
+        self.did_mid_cycle = False
 
     @property
     def ground_y(self):
@@ -37,6 +38,8 @@ class Background(pygame.sprite.Sprite):
         self.tile = self._load_scaled_background(background_name)
         self.tile_width = self.tile.get_width()
         self.x = 0.0
+        self.did_wrap = True
+        self.did_mid_cycle = False
 
     def set_level(self, level):
         self.set_background(f"lv{level}")
@@ -45,8 +48,12 @@ class Background(pygame.sprite.Sprite):
         self.speed = speed
 
     def update(self, dt):
+        previous_x = self.x
         self.did_wrap = False
+        self.did_mid_cycle = False
         self.x -= self.speed * dt
+        if previous_x > -self.tile_width / 2 >= self.x:
+            self.did_mid_cycle = True
         if self.x <= -self.tile_width:
             self.x += self.tile_width
             self.did_wrap = True

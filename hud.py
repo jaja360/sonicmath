@@ -120,12 +120,12 @@ class Hud:
         )
 
     def _draw_status(self, rect, state):
-        status = state.status.lower()
+        status = state.status.value
         dot_color = STATUS_COLORS.get(status, TEXT_COLOR)
         x = rect.x + 22
         y = rect.y + 128
         label = self.text_font.render("Status", True, MUTED_TEXT_COLOR)
-        value = self.text_font.render(state.status.title(), True, TEXT_COLOR)
+        value = self.text_font.render(status.title(), True, TEXT_COLOR)
         self.surface.blit(label, (x, y))
         value_y = y + 32
         value_rect = value.get_rect(topleft=(x + 30, value_y))
