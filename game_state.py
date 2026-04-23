@@ -17,6 +17,7 @@ JUMP_TRIGGER_DELAY = 20
 
 class RunState(Enum):
     PLAYING = auto()
+    PAUSED = auto()
     GAME_OVER = auto()
     ENDGAME = auto()
 

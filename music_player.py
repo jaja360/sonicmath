@@ -13,8 +13,10 @@ class MusicPlayer:
             pygame.mixer.init()
             pygame.mixer.music.set_volume(1.0)
         except NotImplementedError:
+            self.sound_enabled = False
             print("Audio disabled: pygame mixer is not available in this environment.")
         except pygame.error as exc:
+            self.sound_enabled = False
             print(f"Audio disabled: {exc}")
 
     def play(self, music_path, loops=-1):
@@ -37,3 +39,15 @@ class MusicPlayer:
 
         pygame.mixer.music.stop()
         self.current_path = None
+
+    def pause(self):
+        if not self.sound_enabled:
+            return
+
+        pygame.mixer.music.pause()
+
+    def unpause(self):
+        if not self.sound_enabled:
+            return
+
+        pygame.mixer.music.unpause()

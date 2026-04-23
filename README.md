@@ -10,7 +10,8 @@ The game consists of a series of arithmetic math problems that you need to solve
 The running Sonic character in the background will jump over obstacles only if
 you answer the math problem correctly and in time. If you answer incorrectly or
 take too long, Sonic will hit the obstacle and lose some of his health. The game
-ends when Sonic's health reaches zero.
+ends when Sonic's health reaches zero. Press `ESC` at any time during a run to
+pause and resume the game.
 
 ## Installation
 
