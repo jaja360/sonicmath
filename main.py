@@ -93,7 +93,7 @@ def draw_endgame(screen, state):
         ENDGAME_TITLE_SHADOW,
         body_lines=(
             "Sonic made it to the finish line.",
-            f"Final score: {state.hud_data.score}",
+            f"Final score: {state.score}",
             "Press Enter to play again",
         ),
         body_colors=(ENDGAME_TEXT_COLOR, ENDGAME_ACCENT_COLOR, ENDGAME_TEXT_COLOR),
@@ -173,11 +173,11 @@ def main():
                         state = reset_game(updatable, drawable, restart_options)
                     continue
                 if event.key == pygame.K_BACKSPACE:
-                    state.hud_data.answer_text = state.hud_data.answer_text[:-1]
+                    state.answer_text = state.answer_text[:-1]
                 elif event.key == pygame.K_RETURN:
                     submit_answer(state)
                 elif event.unicode.isdigit():
-                    state.hud_data.answer_text += event.unicode
+                    state.answer_text += event.unicode
 
         if state.run_state == RunState.PLAYING:
             handle_obstacle_collisions(state)
@@ -189,7 +189,7 @@ def main():
             state.sonic.update(dt)
 
         screen.fill(HUD_BACKGROUND_COLOR)
-        hud.draw(screen, state.hud_data, state.level, state.is_answer_pending)
+        hud.draw(screen, state)
         pygame.draw.line(screen, HUD_BORDER_COLOR, (0, HUD_HEIGHT), (SCREEN_WIDTH, HUD_HEIGHT), 4)
         for d in drawable:
             d.draw(screen)

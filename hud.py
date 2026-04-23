@@ -1,5 +1,4 @@
 import pygame
-from dataclasses import dataclass
 
 HUD_BACKGROUND_COLOR = (18, 22, 32)
 PANEL_COLOR = (27, 34, 48)
@@ -23,15 +22,6 @@ HUD_RIGHT_PANEL_WIDTH = 260
 HUD_CENTER_SECTION_GAP = 24
 
 
-@dataclass
-class HudData:
-    health: int = 100
-    status: str = "normal"
-    score: int = 0
-    question: str = "1+1"
-    answer_text: str = ""
-
-
 class Hud:
     def __init__(self, width, height):
         self.width = width
@@ -40,7 +30,7 @@ class Hud:
         self.text_font = pygame.font.SysFont(None, 42)
         self.question_font = pygame.font.SysFont(None, 56)
 
-    def draw(self, screen, data, level, is_question_answered=False):
+    def draw(self, screen, state):
         self.surface.fill(HUD_BACKGROUND_COLOR)
 
         left_rect = pygame.Rect(HUD_SPACING, HUD_SPACING, 420, self.height - HUD_SPACING * 2)
@@ -75,13 +65,13 @@ class Hud:
         self._draw_panel(center_rect)
         self._draw_panel(right_rect)
 
-        self._draw_health_bar(left_rect, data)
-        self._draw_status(left_rect, data)
-        self._draw_score(right_rect, data)
-        self._draw_level(right_rect, level)
+        self._draw_health_bar(left_rect, state.health)
+        self._draw_status(left_rect, state)
+        self._draw_score(right_rect, state)
+        self._draw_level(right_rect, state.level)
 
-        self._draw_question(question_rect, data, is_question_answered)
-        self._draw_input(input_rect, data)
+        self._draw_question(question_rect, state, state.is_answer_pending)
+        self._draw_input(input_rect, state)
 
         screen.blit(self.surface, (0, 0))
 
@@ -95,15 +85,15 @@ class Hud:
         self.surface.blit(label_surface, (x, y))
         self.surface.blit(value_surface, (x, y + label_surface.get_height() + 6))
 
-    def _draw_health_bar(self, rect, data):
+    def _draw_health_bar(self, rect, health):
         x = rect.x + 22
         y = rect.y + 18
         bar_width = rect.width - 44
         bar_height = 28
-        ratio = max(0, min(1, data.health / 100))
+        ratio = max(0, min(1, health / 100))
 
         label = self.text_font.render("Health", True, MUTED_TEXT_COLOR)
-        value = self.text_font.render(f"{data.health}/100", True, TEXT_COLOR)
+        value = self.text_font.render(f"{health}/100", True, TEXT_COLOR)
         self.surface.blit(label, (x, y))
         value_rect = value.get_rect(topright=(x + bar_width, y))
         self.surface.blit(value, value_rect)
@@ -129,38 +119,38 @@ class Hud:
             border_radius=14,
         )
 
-    def _draw_status(self, rect, data):
-        status = data.status.lower()
+    def _draw_status(self, rect, state):
+        status = state.status.lower()
         dot_color = STATUS_COLORS.get(status, TEXT_COLOR)
         x = rect.x + 22
         y = rect.y + 128
         label = self.text_font.render("Status", True, MUTED_TEXT_COLOR)
-        value = self.text_font.render(data.status.title(), True, TEXT_COLOR)
+        value = self.text_font.render(state.status.title(), True, TEXT_COLOR)
         self.surface.blit(label, (x, y))
         value_y = y + 32
         value_rect = value.get_rect(topleft=(x + 30, value_y))
         pygame.draw.circle(self.surface, dot_color, (x + 12, value_rect.centery), 8)
         self.surface.blit(value, value_rect)
 
-    def _draw_score(self, rect, data):
-        self._draw_label_value("Score", data.score, rect.x + 22, rect.y + 18)
+    def _draw_score(self, rect, state):
+        self._draw_label_value("Score", state.score, rect.x + 22, rect.y + 18)
 
     def _draw_level(self, rect, level):
         self._draw_label_value("Level", level, rect.x + 22, rect.y + 112, QUESTION_COLOR)
 
-    def _draw_question(self, rect, data, is_question_answered):
+    def _draw_question(self, rect, state, is_question_answered):
         label = self.text_font.render("Question", True, MUTED_TEXT_COLOR)
         color = QUESTION_CORRECT_COLOR if is_question_answered else QUESTION_COLOR
-        question = self.question_font.render(data.question, True, color)
+        question = self.question_font.render(state.question, True, color)
         self.surface.blit(label, (rect.x, rect.y))
         question_rect = question.get_rect(midleft=(rect.x, rect.y + 78))
         question_rect.left = rect.x
         self.surface.blit(question, question_rect)
 
-    def _draw_input(self, rect, data):
+    def _draw_input(self, rect, state):
         label = self.text_font.render("Answer", True, MUTED_TEXT_COLOR)
         field_rect = pygame.Rect(rect.x, rect.y + 56, rect.width, 64)
-        value = data.answer_text if data.answer_text else "_"
+        value = state.answer_text if state.answer_text else "_"
         value_surface = self.text_font.render(value, True, TEXT_COLOR)
 
         self.surface.blit(label, (rect.x, rect.y))

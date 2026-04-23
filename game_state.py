@@ -3,7 +3,6 @@ from enum import Enum, auto
 
 from asset_paths import get_music_path
 from background import Background
-from hud import HudData
 from level_config import build_level_config
 from math_problem import generate_problem
 from music_player import MusicPlayer
@@ -14,6 +13,7 @@ BASE_SPEED = 150
 SPEED_PER_LEVEL = 10
 JUMP_TRIGGER_DELAY = 20
 LOW_HEALTH_THRESHOLD = 15
+POINTS_PER_CORRECT_ANSWER = 10
 
 
 class RunState(Enum):
@@ -33,7 +33,12 @@ class GameOptions:
 @dataclass
 class GameState:
     level: int
-    hud_data: HudData
+    health: int
+    score: int
+    correct_answers: int
+    status: str
+    question: str
+    answer_text: str
     background: Background
     music_player: MusicPlayer
     sonic: Sonic
@@ -50,8 +55,8 @@ def get_speed_for_level(level):
 
 def advance_problem(state):
     state.current_problem = generate_problem(state.level_config)
-    state.hud_data.question = state.current_problem.text
-    state.hud_data.answer_text = ""
+    state.question = state.current_problem.text
+    state.answer_text = ""
     state.is_answer_pending = False
 
 
@@ -60,7 +65,7 @@ def get_current_music_name(state):
         return "ending"
     if state.run_state == RunState.GAME_OVER:
         return "gameOver"
-    if state.hud_data.health <= LOW_HEALTH_THRESHOLD:
+    if state.health <= LOW_HEALTH_THRESHOLD:
         return "lowHP"
     return state.level_config.music_name
 
@@ -91,8 +96,9 @@ def level_up(state):
 
 
 def resolve_correct_answer(state):
-    state.hud_data.score += 1
-    if state.hud_data.score % 5 == 0:
+    state.score += POINTS_PER_CORRECT_ANSWER
+    state.correct_answers += 1
+    if state.correct_answers % 5 == 0:
         level_up(state)
         return
 
@@ -100,13 +106,17 @@ def resolve_correct_answer(state):
 
 
 def create_initial_gamestate(screen_width, scene_height, hud_height, options):
-    hud_data = HudData(health=options.start_hp)
     music_player = MusicPlayer(sound_enabled=options.sound_enabled)
     background = Background(screen_width, scene_height, hud_height)
     sonic = Sonic(ground_y=background.ground_y)
     state = GameState(
         level=options.start_level,
-        hud_data=hud_data,
+        health=options.start_hp,
+        score=0,
+        correct_answers=0,
+        status="normal",
+        question="1+1",
+        answer_text="",
         background=background,
         music_player=music_player,
         sonic=sonic,
@@ -141,10 +151,10 @@ def trigger_endgame(state):
 
 
 def lose_health(state, amount=1, trigger_hit_animation=False):
-    state.hud_data.health = max(0, state.hud_data.health - amount)
-    state.hud_data.answer_text = ""
+    state.health = max(0, state.health - amount)
+    state.answer_text = ""
 
-    if state.hud_data.health == 0:
+    if state.health == 0:
         state.run_state = RunState.GAME_OVER
         state.sonic.set_state(SonicState.RUN_OBSTACLE_GAMEOVER)
     elif trigger_hit_animation:
@@ -154,10 +164,10 @@ def lose_health(state, amount=1, trigger_hit_animation=False):
 
 
 def submit_answer(state):
-    if state.run_state != RunState.PLAYING or state.is_answer_pending or not state.hud_data.answer_text:
+    if state.run_state != RunState.PLAYING or state.is_answer_pending or not state.answer_text:
         return
 
-    if int(state.hud_data.answer_text) == state.current_problem.answer:
+    if int(state.answer_text) == state.current_problem.answer:
         state.is_answer_pending = True
         return
 
