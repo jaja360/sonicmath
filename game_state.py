@@ -12,8 +12,8 @@ from power_down import PowerDown
 from power_up import PowerUp
 from sonic import Sonic, SonicState
 
-BASE_SPEED = 150
-SPEED_PER_LEVEL = 10
+BASE_SPEED = 200
+SPEED_PER_LEVEL = 40
 JUMP_TRIGGER_DELAY = 20
 LOW_HEALTH_THRESHOLD = 15
 POINTS_PER_CORRECT_ANSWER = 10
@@ -22,7 +22,6 @@ SPEED_EFFECT_DURATION = 5
 STATUS_EFFECT_DURATION = 5
 HAZARD_POWER_DOWN_CHANCE = 0.30
 POWER_UP_SPAWN_CHANCE = 0.30
-SPEED_EFFECT_DELTA = 40
 
 
 class RunState(Enum):
@@ -73,15 +72,15 @@ class GameState:
 
 
 def get_speed_for_level(level):
-    return BASE_SPEED + level * SPEED_PER_LEVEL
+    return BASE_SPEED + SPEED_PER_LEVEL * (1 + (level % 5))
 
 
 def get_effective_speed(state):
     speed = state.base_speed
     if state.slow_turns > 0:
-        speed -= SPEED_EFFECT_DELTA
+        speed -= 2 * SPEED_PER_LEVEL
     if state.speed_up_turns > 0:
-        speed += SPEED_EFFECT_DELTA
+        speed += 2 * SPEED_PER_LEVEL
     return speed
 
 
@@ -214,6 +213,7 @@ def level_up(state):
     if state.level >= 25:
         trigger_endgame(state)
         return
+    state.music_player.play_sound("levelUp")
     apply_level(state)
 
 
@@ -307,9 +307,11 @@ def submit_answer(state):
         return
 
     if int(state.answer_text) == state.current_problem.answer:
+        state.music_player.play_sound("goodAnswer")
         state.is_answer_pending = True
         return
 
+    state.music_player.play_sound("badAnswer")
     lose_health(state)
 
 
@@ -324,6 +326,7 @@ def handle_obstacle_collisions(state):
 
         hazard.collidable = False
         state.current_hazard = None
+        state.music_player.play_sound("jump")
         state.sonic.set_state(SonicState.RUN_JUMP_RUN)
         resolve_correct_answer(state)
         return
@@ -336,6 +339,7 @@ def handle_obstacle_collisions(state):
         return
 
     if isinstance(hazard, PowerDown):
+        state.music_player.play_sound("powerDown")
         tick_effects_after_question(state)
         if state.run_state != RunState.PLAYING:
             advance_problem(state)
@@ -343,6 +347,7 @@ def handle_obstacle_collisions(state):
         apply_power_down(state, hazard.effect_name)
         lose_health(state, 0, trigger_hit_animation=True)
     else:
+        state.music_player.play_sound("impact")
         lose_health(state, hazard.damage, trigger_hit_animation=True)
         tick_effects_after_question(state)
     advance_problem(state)
@@ -352,6 +357,7 @@ def handle_power_up_collection(state):
     if state.current_power_up is None or not state.sonic.rect.colliderect(state.current_power_up.rect):
         return
 
+    state.music_player.play_sound("powerUp")
     apply_power_up(state, state.current_power_up.effect_name)
     state.current_power_up.kill()
     state.current_power_up = None

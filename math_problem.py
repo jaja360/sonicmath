@@ -8,6 +8,19 @@ class MathProblem:
     answer: int
 
 
+def _generate_division_problem(max_operand):
+    # Avoid trivial division like x / 1 or x / x = 1.
+    while True:
+        answer = random.randint(2, max_operand // 2)
+        max_divisor = max_operand // answer
+        if max_divisor < 2:
+            continue
+
+        right = random.randint(2, max_divisor)
+        left = answer * right
+        return MathProblem(f"{left} / {right}", answer)
+
+
 def generate_problem(level_config):
     operation = random.choice(tuple(level_config.max_operands))
     max_operand = level_config.max_operands[operation]
@@ -27,10 +40,4 @@ def generate_problem(level_config):
         right = random.randint(0, max_operand)
         return MathProblem(f"{left} * {right}", left * right)
 
-    left = max_operand + 1
-    while left > max_operand:
-        answer = random.randint(1, max_operand)
-        right = random.randint(1, max_operand)
-        left = answer * right
-
-    return MathProblem(f"{left} / {right}", answer)
+    return _generate_division_problem(max_operand)

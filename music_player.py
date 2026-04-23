@@ -1,10 +1,13 @@
 import pygame
 
+from asset_paths import get_sound_path
+
 
 class MusicPlayer:
     def __init__(self, sound_enabled=True):
         self.current_path = None
         self.sound_enabled = sound_enabled
+        self.sounds = {}
 
         if not self.sound_enabled:
             return
@@ -51,3 +54,16 @@ class MusicPlayer:
             return
 
         pygame.mixer.music.unpause()
+
+    def play_sound(self, sound_name):
+        if not self.sound_enabled:
+            return
+
+        try:
+            sound = self.sounds.get(sound_name)
+            if sound is None:
+                sound = pygame.mixer.Sound(get_sound_path(sound_name))
+                self.sounds[sound_name] = sound
+            sound.play()
+        except pygame.error as exc:
+            print(f"Audio disabled: could not play sound {sound_name}: {exc}")

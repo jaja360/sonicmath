@@ -16,7 +16,7 @@ def build_level_config(level: int) -> LevelConfig:
             level=level,
             background_name=background_name,
             music_name=background_name,
-            max_operands={"+": 120, "-": 120, "*": 15, "/": 120},
+            max_operands={"+": 60, "-": 60, "*": 15, "/": 120},
         )
 
     if level >= 15:
@@ -25,7 +25,7 @@ def build_level_config(level: int) -> LevelConfig:
             level=level,
             background_name=background_name,
             music_name=background_name,
-            max_operands={"+": 60, "-": 60, "*": 12, "/": 60},
+            max_operands={"+": 40, "-": 40, "*": 12, "/": 60},
         )
 
     if level >= 10:
@@ -43,7 +43,7 @@ def build_level_config(level: int) -> LevelConfig:
             level=level,
             background_name=background_name,
             music_name=background_name,
-            max_operands={"+": 15, "-": 15},
+            max_operands={"+": 25, "-": 25},
         )
 
     background_name = "lv0" if level >= 0 else "practice"
@@ -51,5 +51,5 @@ def build_level_config(level: int) -> LevelConfig:
         level=level,
         background_name=background_name,
         music_name=background_name,
-        max_operands={"+": 10},
+        max_operands={"+": 20},
     )
