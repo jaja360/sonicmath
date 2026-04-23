@@ -78,6 +78,7 @@ def resolve_correct_answer(state):
     if state.hud_data.score % 5 == 0:
         level_up(state)
         return
+
     advance_problem(state)
 
 
@@ -160,3 +161,4 @@ def handle_obstacle_collisions(state):
     obstacle.kill()
     state.current_obstacle = None
     lose_health(state, obstacle.damage, trigger_hit_animation=True)
+    advance_problem(state)

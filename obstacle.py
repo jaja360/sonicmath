@@ -33,7 +33,7 @@ class Obstacle(pygame.sprite.Sprite):
         frames = self._load_frames()
         self.image = frames[self.obstacle_index]
         self.damage = OBSTACLE_DAMAGE[self.obstacle_index]
-        self.rect = self.image.get_rect(bottomleft=(screen_width + 40, ground_y))
+        self.rect = self.image.get_rect(bottomright=(screen_width, ground_y))
         self.x = float(self.rect.x)
 
     @classmethod

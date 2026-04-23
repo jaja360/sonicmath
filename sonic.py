@@ -12,6 +12,7 @@ BASE_FRAME_TIME = 0.1
 SONIC_SCALE = 3
 SONIC_X = 10
 JUMP_TIMING_OFFSET = 20
+GAMEOVER_RISE = 20
 
 FRAME_WIDTH = 50
 FRAME_HEIGHT = 100
@@ -97,18 +98,29 @@ class Sonic(pygame.sprite.Sprite):
             return self.jump_frame_time
         return self.frame_time
 
+    def _current_y_offset(self):
+        if self.current_state != SonicState.RUN_OBSTACLE_GAMEOVER:
+            return 0
+
+        frames = self.animations[self.current_state]
+        if len(frames) <= 1:
+            return GAMEOVER_RISE
+
+        progress = self.current_frame + self.frame_timer / self._current_frame_time()
+        progress /= len(frames) - 1
+        return round(GAMEOVER_RISE * min(progress, 1.0))
+
     def _set_image(self, image):
-        bottomleft = self.rect.bottomleft
-        if bottomleft == (0, 0):
-            bottomleft = (SONIC_X, self.ground_y)
         self.image = image
-        self.rect = self.image.get_rect(bottomleft=bottomleft)
+        self.rect = self.image.get_rect(bottomleft=(SONIC_X, self.ground_y - self._current_y_offset()))
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
     def update(self, dt):
         self.frame_timer += dt
+        if self.current_state == SonicState.RUN_OBSTACLE_GAMEOVER:
+            self._set_image(self.image)
         if self.frame_timer < self._current_frame_time():
             return
 

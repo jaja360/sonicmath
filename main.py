@@ -126,10 +126,10 @@ def main():
                 elif event.unicode.isdigit():
                     state.hud_data.answer_text += event.unicode
 
-        if state.run_state == RunState.PLAYING and state.background.did_wrap:
-            spawn_obstacle(state, SCREEN_WIDTH)
         if state.run_state == RunState.PLAYING:
             handle_obstacle_collisions(state)
+            if state.background.did_wrap:
+                spawn_obstacle(state, SCREEN_WIDTH)
         updatable.update(dt)
         clear_inactive_obstacle(state)
 
