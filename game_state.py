@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum, auto
 
 from asset_paths import get_music_path
 from background import Background
@@ -14,6 +15,12 @@ SPEED_PER_LEVEL = 10
 JUMP_TRIGGER_DELAY = 20
 
 
+class RunState(Enum):
+    PLAYING = auto()
+    GAME_OVER = auto()
+    ENDGAME = auto()
+
+
 @dataclass
 class GameState:
     level: int
@@ -25,7 +32,7 @@ class GameState:
     level_config: object = None
     current_problem: object = None
     is_answer_pending: bool = False
-    is_game_over: bool = False
+    run_state: RunState = RunState.PLAYING
 
 
 def get_speed_for_level(level):
@@ -54,6 +61,9 @@ def apply_level(state):
 
 def level_up(state):
     state.level += 1
+    if state.level >= 25:
+        trigger_endgame(state)
+        return
     apply_level(state)
 
 
@@ -97,19 +107,27 @@ def clear_inactive_obstacle(state):
         state.current_obstacle = None
 
 
+def trigger_endgame(state):
+    if state.current_obstacle is not None:
+        state.current_obstacle.kill()
+        state.current_obstacle = None
+    state.run_state = RunState.ENDGAME
+    state.sonic.set_state(SonicState.RUN_ENDGAME)
+
+
 def lose_health(state, amount=1, trigger_hit_animation=False):
     state.hud_data.health = max(0, state.hud_data.health - amount)
     state.hud_data.answer_text = ""
 
     if state.hud_data.health == 0:
-        state.is_game_over = True
+        state.run_state = RunState.GAME_OVER
         state.sonic.set_state(SonicState.RUN_OBSTACLE_GAMEOVER)
     elif trigger_hit_animation:
         state.sonic.set_state(SonicState.RUN_OBSTACLE_RUN)
 
 
 def submit_answer(state):
-    if state.is_game_over or state.is_answer_pending or not state.hud_data.answer_text:
+    if state.run_state != RunState.PLAYING or state.is_answer_pending or not state.hud_data.answer_text:
         return
 
     if int(state.hud_data.answer_text) == state.current_problem.answer:

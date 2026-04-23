@@ -5,6 +5,7 @@ from game_state import (
     clear_inactive_obstacle,
     create_initial_gamestate,
     handle_obstacle_collisions,
+    RunState,
     spawn_obstacle,
     submit_answer,
 )
@@ -20,6 +21,11 @@ HUD_BACKGROUND_COLOR = (18, 22, 32)
 HUD_BORDER_COLOR = (60, 82, 120)
 GAME_OVER_COLOR = (255, 110, 110)
 GAME_OVER_SHADOW_COLOR = (20, 8, 8)
+ENDGAME_OVERLAY_COLOR = (10, 16, 28, 190)
+ENDGAME_TITLE_COLOR = (255, 232, 130)
+ENDGAME_TITLE_SHADOW = (52, 32, 0)
+ENDGAME_TEXT_COLOR = (230, 239, 255)
+ENDGAME_ACCENT_COLOR = (118, 198, 255)
 
 
 def draw_game_over(screen):
@@ -31,6 +37,35 @@ def draw_game_over(screen):
     shadow_rect = shadow.get_rect(center=(SCREEN_WIDTH // 2 + 4, SCREEN_HEIGHT // 2 + 4))
     screen.blit(shadow, shadow_rect)
     screen.blit(text, text_rect)
+
+
+def draw_endgame(screen, state):
+    if not hasattr(draw_endgame, "title_font"):
+        draw_endgame.title_font = pygame.font.SysFont(None, 132)
+        draw_endgame.subtitle_font = pygame.font.SysFont(None, 56)
+        draw_endgame.body_font = pygame.font.SysFont(None, 42)
+
+    overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+    overlay.fill(ENDGAME_OVERLAY_COLOR)
+    screen.blit(overlay, (0, 0))
+
+    title = draw_endgame.title_font.render("LEVEL 25 CLEARED", True, ENDGAME_TITLE_COLOR)
+    title_shadow = draw_endgame.title_font.render("LEVEL 25 CLEARED", True, ENDGAME_TITLE_SHADOW)
+    subtitle = draw_endgame.subtitle_font.render("Sonic made it to the finish line.", True, ENDGAME_TEXT_COLOR)
+    score = draw_endgame.body_font.render(f"Final score: {state.hud_data.score}", True, ENDGAME_ACCENT_COLOR)
+    prompt = draw_endgame.body_font.render("Press Enter to play again", True, ENDGAME_TEXT_COLOR)
+
+    title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 120))
+    title_shadow_rect = title_shadow.get_rect(center=(SCREEN_WIDTH // 2 + 4, SCREEN_HEIGHT // 2 - 116))
+    subtitle_rect = subtitle.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 18))
+    score_rect = score.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 42))
+    prompt_rect = prompt.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 124))
+
+    screen.blit(title_shadow, title_shadow_rect)
+    screen.blit(title, title_rect)
+    screen.blit(subtitle, subtitle_rect)
+    screen.blit(score, score_rect)
+    screen.blit(prompt, prompt_rect)
 
 
 def reset_game(updatable, drawable):
@@ -62,7 +97,7 @@ def main():
             if event.type == pygame.QUIT:
                 return
             if event.type == pygame.KEYDOWN:
-                if state.is_game_over:
+                if state.run_state != RunState.PLAYING:
                     if event.key == pygame.K_RETURN:
                         state = reset_game(updatable, drawable)
                     continue
@@ -73,9 +108,9 @@ def main():
                 elif event.unicode.isdigit():
                     state.hud_data.answer_text += event.unicode
 
-        if state.background.did_wrap:
+        if state.run_state == RunState.PLAYING and state.background.did_wrap:
             spawn_obstacle(state, SCREEN_WIDTH)
-        if not state.is_game_over:
+        if state.run_state == RunState.PLAYING:
             handle_obstacle_collisions(state)
         updatable.update(dt)
         clear_inactive_obstacle(state)
@@ -85,8 +120,10 @@ def main():
         pygame.draw.line(screen, HUD_BORDER_COLOR, (0, HUD_HEIGHT), (SCREEN_WIDTH, HUD_HEIGHT), 4)
         for d in drawable:
             d.draw(screen)
-        if state.is_game_over:
+        if state.run_state == RunState.GAME_OVER:
             draw_game_over(screen)
+        elif state.run_state == RunState.ENDGAME:
+            draw_endgame(screen, state)
 
         pygame.display.flip()
 
