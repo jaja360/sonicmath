@@ -197,7 +197,9 @@ def main():
             clear_inactive_obstacle(state)
             clear_inactive_power_up(state)
         elif state.run_state in {RunState.GAME_OVER, RunState.ENDGAME} and not state.sonic.is_animation_complete():
-            state.sonic.update(dt)
+            updatable.update(dt)
+            clear_inactive_obstacle(state)
+            clear_inactive_power_up(state)
 
         screen.fill(HUD_BACKGROUND_COLOR)
         hud.draw(screen, state)
