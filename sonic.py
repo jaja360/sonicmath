@@ -1,9 +1,8 @@
-from enum import Enum
 import os
-
 import pygame
+from enum import Enum
 
-from image_loader import load_image
+from image_loader import load_image, load_sheet_frames
 from obstacle import FRAME_WIDTH as OBSTACLE_WIDTH
 
 SPRITE_PATH = os.path.join("assets", "sprites", "sonic.png")
@@ -66,14 +65,14 @@ class Sonic(pygame.sprite.Sprite):
         return animations
 
     def _load_row_frames(self, sheet, row):
-        frames = []
-        for col in range(FRAME_COLUMNS):
-            rect = pygame.Rect(col * FRAME_WIDTH, row * FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT)
-            frame = sheet.subsurface(rect).copy()
-            frame = pygame.transform.scale(frame, (FRAME_WIDTH * SONIC_SCALE, FRAME_HEIGHT * SONIC_SCALE))
-            frames.append(frame)
-
-        return frames
+        return load_sheet_frames(
+            sheet,
+            FRAME_WIDTH,
+            FRAME_HEIGHT,
+            row=row,
+            frame_count=FRAME_COLUMNS,
+            scale_to=(FRAME_WIDTH * SONIC_SCALE, FRAME_HEIGHT * SONIC_SCALE),
+        )
 
     def set_state(self, state):
         if not isinstance(state, SonicState):

@@ -1,5 +1,4 @@
 import pygame
-
 from asset_paths import get_background_path
 from image_loader import load_image
 

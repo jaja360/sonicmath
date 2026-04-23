@@ -1,9 +1,8 @@
 import os
 import random
-
 import pygame
 
-from image_loader import load_image
+from image_loader import load_image, load_sheet_frames
 
 SPRITE_PATH = os.path.join("assets", "sprites", "obstacles.png")
 FRAME_WIDTH = 100
@@ -43,11 +42,7 @@ class Obstacle(pygame.sprite.Sprite):
             return cls._frames
 
         sheet = load_image(SPRITE_PATH)
-        cls._frames = []
-        for col in range(FRAME_COLUMNS):
-            rect = pygame.Rect(col * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT)
-            cls._frames.append(sheet.subsurface(rect).copy())
-
+        cls._frames = load_sheet_frames(sheet, FRAME_WIDTH, FRAME_HEIGHT, frame_count=FRAME_COLUMNS)
         return cls._frames
 
     def update(self, dt):
