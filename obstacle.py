@@ -34,6 +34,7 @@ class Obstacle(pygame.sprite.Sprite):
         self.image = frames[self.obstacle_index]
         self.damage = OBSTACLE_DAMAGE[self.obstacle_index]
         self.rect = self.image.get_rect(bottomleft=(screen_width + 40, ground_y))
+        self.x = float(self.rect.x)
 
     @classmethod
     def _load_frames(cls):
@@ -49,7 +50,8 @@ class Obstacle(pygame.sprite.Sprite):
         return cls._frames
 
     def update(self, dt):
-        self.rect.x -= round(self.speed * dt)
+        self.x -= self.speed * dt
+        self.rect.x = round(self.x)
         if self.rect.right < 0:
             self.kill()
 

@@ -21,6 +21,7 @@ GAME_OVER_COLOR = (255, 110, 110)
 GAME_OVER_SHADOW_COLOR = (20, 8, 8)
 BASE_SPEED = 150
 SPEED_PER_LEVEL = 10
+JUMP_TRIGGER_DELAY = 20
 
 
 @dataclass
@@ -30,7 +31,7 @@ class GameState:
     background: Background
     music_player: MusicPlayer
     sonic: Sonic
-    obstacles: pygame.sprite.Group
+    current_obstacle: Obstacle | None = None
     level_config: object = None
     current_problem: object = None
     is_answer_pending: bool = False
@@ -56,8 +57,8 @@ def apply_level(state):
     state.background.set_speed(speed)
     state.music_player.play(get_music_path(state.level_config.music_name))
     state.sonic.set_speed(speed)
-    for obstacle in state.obstacles:
-        obstacle.speed = speed
+    if state.current_obstacle is not None:
+        state.current_obstacle.speed = speed
 
     advance_problem(state)
 
@@ -78,12 +79,14 @@ def resolve_correct_answer(state):
 
 
 def spawn_obstacle(state):
-    obstacle = Obstacle(
+    if state.current_obstacle is not None:
+        return
+
+    state.current_obstacle = Obstacle(
         screen_width=SCREEN_WIDTH,
         ground_y=state.background.ground_y,
         speed=state.background.speed,
     )
-    state.obstacles.add(obstacle)
 
 
 def lose_health(state, amount=1, trigger_hit_animation=False):
@@ -109,26 +112,22 @@ def submit_answer(state):
 
 
 def handle_obstacle_collisions(state):
-    collisions = [
-        obstacle
-        for obstacle in state.obstacles
-        if obstacle.collidable and state.sonic.rect.colliderect(obstacle.rect)
-    ]
-    if not collisions:
+    obstacle = state.current_obstacle
+    if obstacle is None or not obstacle.collidable or not state.sonic.rect.colliderect(obstacle.rect):
         return
 
     if state.is_answer_pending:
-        for obstacle in collisions:
-            obstacle.collidable = False
+        if obstacle.rect.left > state.sonic.rect.right - JUMP_TRIGGER_DELAY:
+            return
+
+        obstacle.collidable = False
         state.sonic.set_state(SonicState.RUN_JUMP_RUN)
         resolve_correct_answer(state)
         return
 
-    for obstacle in collisions:
-        obstacle.kill()
-        lose_health(state, obstacle.damage, trigger_hit_animation=True)
-        if state.is_game_over:
-            return
+    obstacle.kill()
+    state.current_obstacle = None
+    lose_health(state, obstacle.damage, trigger_hit_animation=True)
 
 
 def draw_game_over(screen):
@@ -151,7 +150,6 @@ def main():
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
-    obstacles = pygame.sprite.Group()
     Background.containers = (updatable, drawable)
     Obstacle.containers = (updatable, drawable)
     Sonic.containers = (updatable, drawable)
@@ -167,7 +165,6 @@ def main():
         background=background,
         music_player=music_player,
         sonic=sonic,
-        obstacles=obstacles,
     )
     apply_level(state)
 
@@ -192,6 +189,8 @@ def main():
         if not state.is_game_over:
             handle_obstacle_collisions(state)
         updatable.update(dt)
+        if state.current_obstacle is not None and not state.current_obstacle.alive():
+            state.current_obstacle = None
 
         screen.fill(HUD_BACKGROUND_COLOR)
         hud.draw(screen, state.hud_data, state.level, state.is_answer_pending)

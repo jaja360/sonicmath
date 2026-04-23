@@ -4,17 +4,20 @@ import os
 import pygame
 
 from image_loader import load_image
+from obstacle import FRAME_WIDTH as OBSTACLE_WIDTH
 
 SPRITE_PATH = os.path.join("assets", "sprites", "sonic.png")
 
 BASE_FRAME_TIME = 0.1
 SONIC_SCALE = 3
 SONIC_X = 10
+JUMP_TIMING_OFFSET = 20
 
 FRAME_WIDTH = 50
 FRAME_HEIGHT = 100
 FRAME_COLUMNS = 12
 FRAME_ROWS = 7
+SONIC_WIDTH = FRAME_WIDTH * SONIC_SCALE
 
 
 class SonicState(Enum):
@@ -84,6 +87,14 @@ class Sonic(pygame.sprite.Sprite):
 
     def set_speed(self, speed):
         self.frame_time = BASE_FRAME_TIME * 150 / speed
+        jump_distance = SONIC_WIDTH + OBSTACLE_WIDTH + JUMP_TIMING_OFFSET
+        jump_duration = jump_distance / speed
+        self.jump_frame_time = jump_duration / FRAME_COLUMNS
+
+    def _current_frame_time(self):
+        if self.current_state == SonicState.RUN_JUMP_RUN:
+            return self.jump_frame_time
+        return self.frame_time
 
     def _set_image(self, image):
         bottomleft = self.rect.bottomleft
@@ -97,7 +108,7 @@ class Sonic(pygame.sprite.Sprite):
 
     def update(self, dt):
         self.frame_timer += dt
-        if self.frame_timer < self.frame_time:
+        if self.frame_timer < self._current_frame_time():
             return
 
         self.frame_timer = 0.0
