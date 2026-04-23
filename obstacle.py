@@ -27,6 +27,7 @@ class Obstacle(pygame.sprite.Sprite):
         self.screen_width = screen_width
         self.ground_y = ground_y
         self.speed = speed
+        self.collidable = True
         self.obstacle_index = obstacle_index if obstacle_index is not None else random.randrange(FRAME_COLUMNS)
 
         frames = self._load_frames()

@@ -33,6 +33,7 @@ class GameState:
     obstacles: pygame.sprite.Group
     level_config: object = None
     current_problem: object = None
+    is_answer_pending: bool = False
     is_game_over: bool = False
 
 
@@ -44,6 +45,7 @@ def advance_problem(state):
     state.current_problem = generate_problem(state.level_config)
     state.hud_data.question = state.current_problem.text
     state.hud_data.answer_text = ""
+    state.is_answer_pending = False
 
 
 def apply_level(state):
@@ -65,6 +67,16 @@ def level_up(state):
     apply_level(state)
 
 
+def resolve_correct_answer(state):
+    state.hud_data.score += 1
+
+    if state.hud_data.score % 5 == 0:
+        level_up(state)
+        return
+
+    advance_problem(state)
+
+
 def spawn_obstacle(state):
     obstacle = Obstacle(
         screen_width=SCREEN_WIDTH,
@@ -74,38 +86,47 @@ def spawn_obstacle(state):
     state.obstacles.add(obstacle)
 
 
-def lose_health(state, amount=1):
+def lose_health(state, amount=1, trigger_hit_animation=False):
     state.hud_data.health = max(0, state.hud_data.health - amount)
     state.hud_data.answer_text = ""
 
     if state.hud_data.health == 0:
         state.is_game_over = True
         state.sonic.set_state(SonicState.RUN_OBSTACLE_GAMEOVER)
-    else:
+    elif trigger_hit_animation:
         state.sonic.set_state(SonicState.RUN_OBSTACLE_RUN)
 
 
 def submit_answer(state):
-    if state.is_game_over or not state.hud_data.answer_text:
+    if state.is_game_over or state.is_answer_pending or not state.hud_data.answer_text:
         return
 
     if int(state.hud_data.answer_text) == state.current_problem.answer:
-        state.hud_data.score += 1
-
-        if state.hud_data.score % 5 == 0:
-            level_up(state)
-            return
-
-        advance_problem(state)
+        state.is_answer_pending = True
         return
 
     lose_health(state)
 
 
 def handle_obstacle_collisions(state):
-    collisions = pygame.sprite.spritecollide(state.sonic, state.obstacles, dokill=True)
+    collisions = [
+        obstacle
+        for obstacle in state.obstacles
+        if obstacle.collidable and state.sonic.rect.colliderect(obstacle.rect)
+    ]
+    if not collisions:
+        return
+
+    if state.is_answer_pending:
+        for obstacle in collisions:
+            obstacle.collidable = False
+        state.sonic.set_state(SonicState.RUN_JUMP_RUN)
+        resolve_correct_answer(state)
+        return
+
     for obstacle in collisions:
-        lose_health(state, obstacle.damage)
+        obstacle.kill()
+        lose_health(state, obstacle.damage, trigger_hit_animation=True)
         if state.is_game_over:
             return
 
@@ -122,7 +143,7 @@ def draw_game_over(screen):
 
 
 def main():
-    print(f"Starting Asteroids with pygame version {pygame.version.ver}")
+    print(f"Starting SonicMath with pygame version {pygame.version.ver}")
     print(f"Screen width: {SCREEN_WIDTH}\nScreen height: {SCREEN_HEIGHT}")
     pygame.init()
     pygame.key.set_repeat(200, 30)
@@ -166,14 +187,14 @@ def main():
                 elif event.unicode.isdigit():
                     state.hud_data.answer_text += event.unicode
 
-        handle_obstacle_collisions(state)
         if state.background.did_wrap:
             spawn_obstacle(state)
-
+        if not state.is_game_over:
+            handle_obstacle_collisions(state)
         updatable.update(dt)
 
         screen.fill(HUD_BACKGROUND_COLOR)
-        hud.draw(screen, state.hud_data, state.level)
+        hud.draw(screen, state.hud_data, state.level, state.is_answer_pending)
         pygame.draw.line(screen, HUD_BORDER_COLOR, (0, HUD_HEIGHT), (SCREEN_WIDTH, HUD_HEIGHT), 4)
         for d in drawable:
             d.draw(screen)

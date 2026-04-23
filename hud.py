@@ -7,6 +7,7 @@ PANEL_BORDER_COLOR = (60, 82, 120)
 TEXT_COLOR = (235, 240, 250)
 MUTED_TEXT_COLOR = (159, 176, 204)
 QUESTION_COLOR = (255, 230, 140)
+QUESTION_CORRECT_COLOR = (103, 220, 120)
 INPUT_BACKGROUND_COLOR = (12, 15, 24)
 INPUT_BORDER_COLOR = (90, 120, 170)
 HEALTH_BACKGROUND_COLOR = (78, 24, 24)
@@ -39,7 +40,7 @@ class Hud:
         self.text_font = pygame.font.SysFont(None, 42)
         self.question_font = pygame.font.SysFont(None, 56)
 
-    def draw(self, screen, data, level):
+    def draw(self, screen, data, level, is_question_answered=False):
         self.surface.fill(HUD_BACKGROUND_COLOR)
 
         left_rect = pygame.Rect(HUD_SPACING, HUD_SPACING, 420, self.height - HUD_SPACING * 2)
@@ -79,7 +80,7 @@ class Hud:
         self._draw_score(right_rect, data)
         self._draw_level(right_rect, level)
 
-        self._draw_question(question_rect, data)
+        self._draw_question(question_rect, data, is_question_answered)
         self._draw_input(input_rect, data)
 
         screen.blit(self.surface, (0, 0))
@@ -147,9 +148,10 @@ class Hud:
     def _draw_level(self, rect, level):
         self._draw_label_value("Level", level, rect.x + 22, rect.y + 112, QUESTION_COLOR)
 
-    def _draw_question(self, rect, data):
+    def _draw_question(self, rect, data, is_question_answered):
         label = self.text_font.render("Question", True, MUTED_TEXT_COLOR)
-        question = self.question_font.render(data.question, True, QUESTION_COLOR)
+        color = QUESTION_CORRECT_COLOR if is_question_answered else QUESTION_COLOR
+        question = self.question_font.render(data.question, True, color)
         self.surface.blit(label, (rect.x, rect.y))
         question_rect = question.get_rect(midleft=(rect.x, rect.y + 78))
         question_rect.left = rect.x

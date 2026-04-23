@@ -30,6 +30,7 @@ class SonicState(Enum):
 TRANSITION_STATES = {
     SonicState.STOP_TO_RUN: SonicState.RUN_LOOP,
     SonicState.RUN_OBSTACLE_RUN: SonicState.RUN_LOOP,
+    SonicState.RUN_JUMP_RUN: SonicState.RUN_LOOP,
 }
 HOLD_FINAL_FRAME_STATES = {
     SonicState.RUN_OBSTACLE_GAMEOVER,
