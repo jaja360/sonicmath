@@ -117,6 +117,10 @@ class Sonic(pygame.sprite.Sprite):
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
+    def is_animation_complete(self):
+        frames = self.animations[self.current_state]
+        return self.current_state in HOLD_FINAL_FRAME_STATES and self.current_frame == len(frames) - 1
+
     def update(self, dt):
         self.frame_timer += dt
         if self.current_state == SonicState.RUN_OBSTACLE_GAMEOVER:

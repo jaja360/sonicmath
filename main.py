@@ -179,15 +179,17 @@ def main():
                 spawn_obstacle(state, SCREEN_WIDTH)
             updatable.update(dt)
             clear_inactive_obstacle(state)
+        elif state.run_state in {RunState.GAME_OVER, RunState.ENDGAME} and not state.sonic.is_animation_complete():
+            state.sonic.update(dt)
 
         screen.fill(HUD_BACKGROUND_COLOR)
         hud.draw(screen, state.hud_data, state.level, state.is_answer_pending)
         pygame.draw.line(screen, HUD_BORDER_COLOR, (0, HUD_HEIGHT), (SCREEN_WIDTH, HUD_HEIGHT), 4)
         for d in drawable:
             d.draw(screen)
-        if state.run_state == RunState.GAME_OVER:
+        if state.run_state == RunState.GAME_OVER and state.sonic.is_animation_complete():
             draw_game_over(screen)
-        elif state.run_state == RunState.ENDGAME:
+        elif state.run_state == RunState.ENDGAME and state.sonic.is_animation_complete():
             draw_endgame(screen, state)
         elif state.run_state == RunState.PAUSED:
             draw_pause_menu(screen)
