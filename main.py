@@ -33,6 +33,7 @@ PAUSE_TITLE_COLOR = (241, 246, 255)
 PAUSE_TITLE_SHADOW = (24, 31, 48)
 PAUSE_TEXT_COLOR = (188, 204, 232)
 MAX_START_LEVEL = 24
+TARGET_FPS = 60
 
 
 def parse_args():
@@ -115,6 +116,13 @@ def reset_game(updatable, drawable, options):
     return create_initial_gamestate(SCREEN_WIDTH, SCENE_HEIGHT, HUD_HEIGHT, options)
 
 
+def create_screen():
+    try:
+        return pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), vsync=1)
+    except TypeError:
+        return pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+
 def main():
     args = parse_args()
     initial_options = GameOptions(sound_enabled=not args.no_sound, start_level=args.start_level)
@@ -124,7 +132,7 @@ def main():
     print(f"Screen width: {SCREEN_WIDTH}\nScreen height: {SCREEN_HEIGHT}")
     pygame.init()
     pygame.key.set_repeat(200, 30)
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    screen = create_screen()
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
@@ -137,7 +145,7 @@ def main():
 
     clock = pygame.time.Clock()
     while True:
-        dt = clock.tick(60) / 1000
+        dt = clock.tick_busy_loop(TARGET_FPS) / 1000
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return

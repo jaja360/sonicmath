@@ -155,6 +155,7 @@ def handle_obstacle_collisions(state):
             return
 
         obstacle.collidable = False
+        state.current_obstacle = None
         state.sonic.set_state(SonicState.RUN_JUMP_RUN)
         resolve_correct_answer(state)
         return

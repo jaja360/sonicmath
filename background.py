@@ -6,7 +6,7 @@ from image_loader import load_image
 # Height of the ground line as a ratio of the scene height
 # Used to compute self.ground_y, which is used by the other classes to determine
 # where the ground is.
-GROUND_LINE_RATIO = 0.92
+GROUND_LINE_RATIO = 0.90
 
 
 class Background(pygame.sprite.Sprite):
@@ -28,7 +28,7 @@ class Background(pygame.sprite.Sprite):
         image = load_image(get_background_path(background_name))
         half_width = image.get_width() // 2
         tile = image.subsurface((0, 0, half_width, image.get_height())).copy()
-        return pygame.transform.smoothscale(tile, (self.screen_width, self.scene_height))
+        return pygame.transform.smoothscale(tile, (self.screen_width, self.scene_height)).convert()
 
     def set_background(self, background_name):
         if background_name == self.current_name:

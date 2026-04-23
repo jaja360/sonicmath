@@ -9,6 +9,7 @@ SPRITE_PATH = os.path.join("assets", "sprites", "obstacles.png")
 FRAME_WIDTH = 100
 FRAME_HEIGHT = 100
 FRAME_COLUMNS = 18
+GROUND_OFFSET = 20  # offset to position slightly above ground level.
 
 # Damage dealt by each obstacle frame in the sheet, from left to right.
 OBSTACLE_DAMAGE = [
@@ -33,7 +34,7 @@ class Obstacle(pygame.sprite.Sprite):
         frames = self._load_frames()
         self.image = frames[self.obstacle_index]
         self.damage = OBSTACLE_DAMAGE[self.obstacle_index]
-        self.rect = self.image.get_rect(bottomright=(screen_width, ground_y))
+        self.rect = self.image.get_rect(bottomright=(screen_width, ground_y - GROUND_OFFSET))
         self.x = float(self.rect.x)
 
     @classmethod
