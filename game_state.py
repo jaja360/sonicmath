@@ -13,6 +13,7 @@ from sonic import Sonic, SonicState
 BASE_SPEED = 150
 SPEED_PER_LEVEL = 10
 JUMP_TRIGGER_DELAY = 20
+LOW_HEALTH_THRESHOLD = 15
 
 
 class RunState(Enum):
@@ -53,13 +54,27 @@ def advance_problem(state):
     state.is_answer_pending = False
 
 
+def get_current_music_name(state):
+    if state.run_state == RunState.ENDGAME:
+        return "ending"
+    if state.run_state == RunState.GAME_OVER:
+        return "gameOver"
+    if state.hud_data.health <= LOW_HEALTH_THRESHOLD:
+        return "lowHP"
+    return state.level_config.music_name
+
+
+def sync_music(state):
+    state.music_player.play(get_music_path(get_current_music_name(state)))
+
+
 def apply_level(state):
     state.level_config = build_level_config(state.level)
     speed = get_speed_for_level(state.level)
 
     state.background.set_background(state.level_config.background_name)
     state.background.set_speed(speed)
-    state.music_player.play(get_music_path(state.level_config.music_name))
+    sync_music(state)
     state.sonic.set_speed(speed)
     if state.current_obstacle is not None:
         state.current_obstacle.speed = speed
@@ -120,6 +135,7 @@ def trigger_endgame(state):
         state.current_obstacle.kill()
         state.current_obstacle = None
     state.run_state = RunState.ENDGAME
+    sync_music(state)
     state.sonic.set_state(SonicState.RUN_ENDGAME)
 
 
@@ -132,6 +148,8 @@ def lose_health(state, amount=1, trigger_hit_animation=False):
         state.sonic.set_state(SonicState.RUN_OBSTACLE_GAMEOVER)
     elif trigger_hit_animation:
         state.sonic.set_state(SonicState.RUN_OBSTACLE_RUN)
+
+    sync_music(state)
 
 
 def submit_answer(state):
