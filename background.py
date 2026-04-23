@@ -9,8 +9,9 @@ from image_loader import load_image
 GROUND_LINE_RATIO = 0.92
 
 
-class Background:
+class Background(pygame.sprite.Sprite):
     def __init__(self, screen_width, scene_height, top):
+        super().__init__(self.containers)
         self.screen_width = screen_width
         self.scene_height = scene_height
         self.top = top  # The y coordinate where background starts (i.e. the height of the HUD)

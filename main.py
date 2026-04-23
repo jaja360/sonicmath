@@ -26,7 +26,6 @@ def main():
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     hud = Hud(SCREEN_WIDTH, HUD_HEIGHT)
-    background = Background(SCREEN_WIDTH, SCENE_HEIGHT, HUD_HEIGHT)
     background.set_background(level_config.background_name)
     background.set_speed(level_config.speed)
 
@@ -35,9 +34,10 @@ def main():
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
-
+    Background.containers = (updatable,)
     Sonic.containers = (updatable, drawable)
 
+    background = Background(SCREEN_WIDTH, SCENE_HEIGHT, HUD_HEIGHT)
     sonic = Sonic(ground_y=background.ground_y)
     sonic.set_speed(level_config.speed)
 
@@ -55,7 +55,6 @@ def main():
                 elif event.unicode.isdigit():
                     hud_data.answer_text += event.unicode
 
-        background.update(dt)
         updatable.update(dt)
 
         screen.fill(HUD_BACKGROUND_COLOR)
