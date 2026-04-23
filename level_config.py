@@ -6,8 +6,7 @@ class LevelConfig:
     level: int
     background_name: str
     music_name: str
-    speed: float
-    max_operand: int
+    max_operands: dict[str, int]
 
 
 def build_level_config(level: int) -> LevelConfig:
@@ -17,8 +16,7 @@ def build_level_config(level: int) -> LevelConfig:
             level=level,
             background_name=background_name,
             music_name=background_name,
-            speed=350,
-            max_operand=50,
+            max_operands={"+": 120, "-": 120, "*": 15, "/": 120},
         )
 
     if level >= 15:
@@ -27,8 +25,7 @@ def build_level_config(level: int) -> LevelConfig:
             level=level,
             background_name=background_name,
             music_name=background_name,
-            speed=300,
-            max_operand=30,
+            max_operands={"+": 60, "-": 60, "*": 12, "/": 60},
         )
 
     if level >= 10:
@@ -37,8 +34,7 @@ def build_level_config(level: int) -> LevelConfig:
             level=level,
             background_name=background_name,
             music_name=background_name,
-            speed=250,
-            max_operand=20,
+            max_operands={"+": 30, "-": 30, "*": 8},
         )
 
     if level >= 5:
@@ -47,8 +43,7 @@ def build_level_config(level: int) -> LevelConfig:
             level=level,
             background_name=background_name,
             music_name=background_name,
-            speed=200,
-            max_operand=15,
+            max_operands={"+": 15, "-": 15},
         )
 
     background_name = "lv0" if level >= 0 else "practice"
@@ -56,6 +51,5 @@ def build_level_config(level: int) -> LevelConfig:
         level=level,
         background_name=background_name,
         music_name=background_name,
-        speed=150,
-        max_operand=10,
+        max_operands={"+": 10},
     )
