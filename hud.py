@@ -27,7 +27,6 @@ class HudData:
     health: int = 100
     status: str = "normal"
     score: int = 0
-    level: int = 0
     question: str = "1+1"
     answer_text: str = ""
 
@@ -40,7 +39,7 @@ class Hud:
         self.text_font = pygame.font.SysFont(None, 42)
         self.question_font = pygame.font.SysFont(None, 56)
 
-    def draw(self, screen, data):
+    def draw(self, screen, data, level):
         self.surface.fill(HUD_BACKGROUND_COLOR)
 
         left_rect = pygame.Rect(HUD_SPACING, HUD_SPACING, 420, self.height - HUD_SPACING * 2)
@@ -78,7 +77,7 @@ class Hud:
         self._draw_health_bar(left_rect, data)
         self._draw_status(left_rect, data)
         self._draw_score(right_rect, data)
-        self._draw_level(right_rect, data)
+        self._draw_level(right_rect, level)
 
         self._draw_question(question_rect, data)
         self._draw_input(input_rect, data)
@@ -145,8 +144,8 @@ class Hud:
     def _draw_score(self, rect, data):
         self._draw_label_value("Score", data.score, rect.x + 22, rect.y + 18)
 
-    def _draw_level(self, rect, data):
-        self._draw_label_value("Level", data.level, rect.x + 22, rect.y + 112, QUESTION_COLOR)
+    def _draw_level(self, rect, level):
+        self._draw_label_value("Level", level, rect.x + 22, rect.y + 112, QUESTION_COLOR)
 
     def _draw_question(self, rect, data):
         label = self.text_font.render("Question", True, MUTED_TEXT_COLOR)

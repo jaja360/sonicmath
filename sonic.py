@@ -27,6 +27,14 @@ class SonicState(Enum):
     RUN_ENDGAME = 6
 
 
+TRANSITION_STATES = {
+    SonicState.STOP_TO_RUN: SonicState.RUN_LOOP,
+}
+HOLD_FINAL_FRAME_STATES = {
+    SonicState.RUN_OBSTACLE_GAMEOVER,
+}
+
+
 class Sonic(pygame.sprite.Sprite):
 
     def __init__(self, ground_y):
@@ -34,7 +42,8 @@ class Sonic(pygame.sprite.Sprite):
         self.current_state = SonicState.STOP_TO_RUN
         self.current_frame = 0
         self.frame_timer = 0.0
-        self.frame_time = self.set_speed(150)
+        self.frame_time = BASE_FRAME_TIME
+        self.set_speed(150)
         self.ground_y = ground_y
 
         sheet = load_image(SPRITE_PATH)
@@ -91,5 +100,15 @@ class Sonic(pygame.sprite.Sprite):
 
         self.frame_timer = 0.0
         frames = self.animations[self.current_state]
+
+        if self.current_frame == len(frames) - 1:
+            next_state = TRANSITION_STATES.get(self.current_state)
+            if next_state is not None:
+                self.set_state(next_state)
+                return
+
+            if self.current_state in HOLD_FINAL_FRAME_STATES:
+                return
+
         self.current_frame = (self.current_frame + 1) % len(frames)
         self._set_image(frames[self.current_frame])
