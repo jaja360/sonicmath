@@ -18,6 +18,7 @@ class Background(pygame.sprite.Sprite):
         self.x = 0.0
         self.speed = 150
         self.current_name = ""
+        self.did_wrap = True
 
     @property
     def ground_y(self):
@@ -45,9 +46,11 @@ class Background(pygame.sprite.Sprite):
         self.speed = speed
 
     def update(self, dt):
+        self.did_wrap = False
         self.x -= self.speed * dt
         if self.x <= -self.tile_width:
             self.x += self.tile_width
+            self.did_wrap = True
 
     def draw(self, screen):
         x = round(self.x)

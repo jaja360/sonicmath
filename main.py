@@ -5,6 +5,7 @@ import pygame
 from asset_paths import get_music_path
 from background import Background
 from hud import Hud, HudData
+from obstacle import Obstacle
 from level_config import build_level_config
 from math_problem import generate_problem
 from music_player import MusicPlayer
@@ -29,6 +30,7 @@ class GameState:
     background: Background
     music_player: MusicPlayer
     sonic: Sonic
+    obstacles: pygame.sprite.Group
     level_config: object = None
     current_problem: object = None
     is_game_over: bool = False
@@ -52,6 +54,8 @@ def apply_level(state):
     state.background.set_speed(speed)
     state.music_player.play(get_music_path(state.level_config.music_name))
     state.sonic.set_speed(speed)
+    for obstacle in state.obstacles:
+        obstacle.speed = speed
 
     advance_problem(state)
 
@@ -61,6 +65,15 @@ def level_up(state):
     apply_level(state)
 
 
+def spawn_obstacle(state):
+    obstacle = Obstacle(
+        screen_width=SCREEN_WIDTH,
+        ground_y=state.background.ground_y,
+        speed=state.background.speed,
+    )
+    state.obstacles.add(obstacle)
+
+
 def lose_health(state, amount=1):
     state.hud_data.health = max(0, state.hud_data.health - amount)
     state.hud_data.answer_text = ""
@@ -68,6 +81,8 @@ def lose_health(state, amount=1):
     if state.hud_data.health == 0:
         state.is_game_over = True
         state.sonic.set_state(SonicState.RUN_OBSTACLE_GAMEOVER)
+    else:
+        state.sonic.set_state(SonicState.RUN_OBSTACLE_RUN)
 
 
 def submit_answer(state):
@@ -85,6 +100,14 @@ def submit_answer(state):
         return
 
     lose_health(state)
+
+
+def handle_obstacle_collisions(state):
+    collisions = pygame.sprite.spritecollide(state.sonic, state.obstacles, dokill=True)
+    for obstacle in collisions:
+        lose_health(state, obstacle.damage)
+        if state.is_game_over:
+            return
 
 
 def draw_game_over(screen):
@@ -107,7 +130,9 @@ def main():
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
+    obstacles = pygame.sprite.Group()
     Background.containers = (updatable, drawable)
+    Obstacle.containers = (updatable, drawable)
     Sonic.containers = (updatable, drawable)
 
     hud_data = HudData()
@@ -121,6 +146,7 @@ def main():
         background=background,
         music_player=music_player,
         sonic=sonic,
+        obstacles=obstacles,
     )
     apply_level(state)
 
@@ -139,6 +165,10 @@ def main():
                     submit_answer(state)
                 elif event.unicode.isdigit():
                     state.hud_data.answer_text += event.unicode
+
+        handle_obstacle_collisions(state)
+        if state.background.did_wrap:
+            spawn_obstacle(state)
 
         updatable.update(dt)
 
