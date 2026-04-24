@@ -5,6 +5,7 @@ from game_state import DamageEffect, ScoreEffect, SpecialEffect, SpeedEffect, St
 HUD_BACKGROUND_COLOR = (18, 22, 32)
 PANEL_COLOR = (27, 34, 48)
 PANEL_BORDER_COLOR = (60, 82, 120)
+PANEL_DIVIDER_COLOR = (78, 92, 116)
 TEXT_COLOR = (235, 240, 250)
 MUTED_TEXT_COLOR = (159, 176, 204)
 QUESTION_COLOR = (255, 230, 140)
@@ -25,7 +26,8 @@ HUD_LEFT_PANEL_WIDTH = 560
 HUD_RIGHT_PANEL_WIDTH = 220
 HUD_CENTER_SECTION_GAP = 24
 EFFECT_ROW_GAP = 14
-EFFECT_COLUMN_GAP = 26
+EFFECT_COLUMN_GAP = 50
+EFFECT_LABEL_GAP = 12
 
 
 class Hud:
@@ -135,54 +137,63 @@ class Hud:
         column_width = (effect_width - EFFECT_COLUMN_GAP) // 2
         left_x = x
         right_x = x + column_width + EFFECT_COLUMN_GAP
+        divider_x = left_x + column_width + EFFECT_COLUMN_GAP // 2
+        divider_top = effect_y - 2
 
-        self._draw_effect_text(left_x, effect_y, self._format_status(state), dot_color)
-        self._draw_effect_text(right_x, effect_y, self._format_speed(state))
+        self._draw_effect_row(left_x, effect_y, column_width, *self._format_status(state), value_color=dot_color)
+        self._draw_effect_row(right_x, effect_y, column_width, *self._format_speed(state))
         effect_y += self.effect_font.get_height() + EFFECT_ROW_GAP
-        self._draw_effect_text(left_x, effect_y, self._format_damage(state))
-        self._draw_effect_text(right_x, effect_y, self._format_score_effect(state))
+        self._draw_effect_row(left_x, effect_y, column_width, *self._format_damage(state))
+        self._draw_effect_row(right_x, effect_y, column_width, *self._format_score_effect(state))
+        divider_bottom = effect_y + self.effect_font.get_height() + 2
         effect_y += self.effect_font.get_height() + EFFECT_ROW_GAP
-        self._draw_effect_text(left_x, effect_y, self._format_special(state))
+        self._draw_effect_row(left_x, effect_y, effect_width, *self._format_special(state))
+        pygame.draw.line(self.surface, PANEL_DIVIDER_COLOR, (divider_x, divider_top), (divider_x, divider_bottom), 2)
 
-    def _draw_effect_text(self, x, y, text, value_color=TEXT_COLOR):
-        effect_surface = self.effect_font.render(text, True, value_color)
-        self.surface.blit(effect_surface, (x, y))
+    def _draw_effect_row(self, x, y, width, label, value, value_color=TEXT_COLOR):
+        label_surface = self.effect_font.render(label, True, MUTED_TEXT_COLOR)
+        value_surface = self.effect_font.render(value, True, value_color)
+        self.surface.blit(label_surface, (x, y))
+        value_rect = value_surface.get_rect(topright=(x + width, y))
+        min_value_x = x + label_surface.get_width() + EFFECT_LABEL_GAP
+        value_rect.x = max(value_rect.x, min_value_x)
+        self.surface.blit(value_surface, value_rect)
 
     def _format_status(self, state):
         label = state.status.value.title()
         if state.status == Status.NORMAL:
-            return f"Status: {label}"
-        return f"Status: {label} ({state.status_turns})"
+            return "Status", label
+        return "Status", f"{label} ({state.status_turns})"
 
     def _format_speed(self, state):
         if state.speed_effect == SpeedEffect.NORMAL:
-            return "Speed: Normal"
+            return "Speed", "Normal"
         label = "Slower" if state.speed_effect == SpeedEffect.SLOWER else "Faster"
-        return f"Speed: {label} ({state.speed_turns})"
+        return "Speed", f"{label} ({state.speed_turns})"
 
     def _format_damage(self, state):
         if state.damage_effect == DamageEffect.NORMAL:
-            return "Damage: Normal"
+            return "Damage", "Normal"
         label = "Reduced" if state.damage_effect == DamageEffect.REDUCED else "Increased"
-        return f"Damage: {label} ({state.damage_turns})"
+        return "Damage", f"{label} ({state.damage_turns})"
 
     def _format_score_effect(self, state):
         if state.score_effect == ScoreEffect.NORMAL:
-            return "Score: Normal"
+            return "Score", "Normal"
         label = "Boosted" if state.score_effect == ScoreEffect.BOOSTED else "Reduced"
-        return f"Score: {label} ({state.score_turns})"
+        return "Score", f"{label} ({state.score_turns})"
 
     def _format_special(self, state):
         if state.special_effect == SpecialEffect.NONE:
-            return "Special: None"
+            return "Special effect", "None"
 
         labels = {
-            SpecialEffect.DEBUFF_IMMUNE: "Debuff Imm.",
+            SpecialEffect.DEBUFF_IMMUNE: "Debuff Immune",
             SpecialEffect.HEAL_BLOCKED: "Heal Blocked",
             SpecialEffect.BUFF_BLOCKED: "Buff Blocked",
-            SpecialEffect.VISUAL_DEBUFF: "Hazards Dim",
+            SpecialEffect.VISUAL_DEBUFF: "Hazards Dimmed",
         }
-        return f"Special: {labels[state.special_effect]} ({state.special_turns})"
+        return "Special effect", f"{labels[state.special_effect]} ({state.special_turns})"
 
     def _draw_score(self, rect, state):
         self._draw_label_value("Score", state.score, rect.x + 22, rect.y + 18)
