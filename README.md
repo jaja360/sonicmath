@@ -56,7 +56,7 @@ You can clone the project and install the required dependencies using:
 ```bash
 git clone git@github.com:jaja360/sonicmath.git
 cd sonicmath
-uv install
+uv sync
 ```
 
 ## Running the Game
