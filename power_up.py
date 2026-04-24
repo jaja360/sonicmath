@@ -12,7 +12,14 @@ POWER_UP_EFFECTS = {
     1: "heal_small",
     2: "heal_large",
     3: "score_boost",
+    4: "damage_reduce_long",
+    5: "damage_reduce_short",
+    6: "debuff_immunity",
+    7: "clear_debuffs",
+    8: "clear_status",
+    9: "cleanse_and_immunity",
     10: "slow_time",
+    11: "full_cleanse",
     12: "shield",
 }
 

@@ -10,6 +10,7 @@ from game_state import (
     handle_obstacle_collisions,
     handle_power_up_collection,
     RunState,
+    SpecialEffect,
     spawn_obstacle,
     spawn_power_up,
     submit_answer,
@@ -21,7 +22,7 @@ from power_up import PowerUp
 from sonic import Sonic
 
 SCREEN_WIDTH = 1600
-HUD_HEIGHT = 240
+HUD_HEIGHT = 280
 SCENE_HEIGHT = 1000
 SCREEN_HEIGHT = HUD_HEIGHT + SCENE_HEIGHT
 HUD_BACKGROUND_COLOR = (18, 22, 32)
@@ -205,6 +206,11 @@ def main():
         hud.draw(screen, state)
         pygame.draw.line(screen, HUD_BORDER_COLOR, (0, HUD_HEIGHT), (SCREEN_WIDTH, HUD_HEIGHT), 4)
         for d in drawable:
+            if d is state.current_hazard and state.special_effect == SpecialEffect.VISUAL_DEBUFF:
+                image = d.image.copy()
+                image.set_alpha(90)
+                screen.blit(image, d.rect)
+                continue
             d.draw(screen)
         if state.run_state == RunState.GAME_OVER and state.sonic.is_animation_complete():
             draw_game_over(screen)

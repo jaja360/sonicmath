@@ -1,5 +1,7 @@
 import pygame
 
+from game_state import DamageEffect, ScoreEffect, SpecialEffect, SpeedEffect, Status
+
 HUD_BACKGROUND_COLOR = (18, 22, 32)
 PANEL_COLOR = (27, 34, 48)
 PANEL_BORDER_COLOR = (60, 82, 120)
@@ -11,6 +13,7 @@ INPUT_BACKGROUND_COLOR = (12, 15, 24)
 INPUT_BORDER_COLOR = (90, 120, 170)
 HEALTH_BACKGROUND_COLOR = (78, 24, 24)
 HEALTH_FILL_COLOR = (67, 192, 94)
+HEALTH_SHIELD_FILL_COLOR = (78, 196, 255)
 STATUS_COLORS = {
     "normal": (67, 192, 94),
     "poisoned": (155, 89, 182),
@@ -18,8 +21,11 @@ STATUS_COLORS = {
     "frozen": (52, 152, 219),
 }
 HUD_SPACING = 12
-HUD_RIGHT_PANEL_WIDTH = 260
+HUD_LEFT_PANEL_WIDTH = 560
+HUD_RIGHT_PANEL_WIDTH = 220
 HUD_CENTER_SECTION_GAP = 24
+EFFECT_ROW_GAP = 14
+EFFECT_COLUMN_GAP = 26
 
 
 class Hud:
@@ -29,11 +35,12 @@ class Hud:
         self.surface = pygame.Surface((width, height))
         self.text_font = pygame.font.SysFont(None, 42)
         self.question_font = pygame.font.SysFont(None, 56)
+        self.effect_font = pygame.font.SysFont(None, 30)
 
     def draw(self, screen, state):
         self.surface.fill(HUD_BACKGROUND_COLOR)
 
-        left_rect = pygame.Rect(HUD_SPACING, HUD_SPACING, 420, self.height - HUD_SPACING * 2)
+        left_rect = pygame.Rect(HUD_SPACING, HUD_SPACING, HUD_LEFT_PANEL_WIDTH, self.height - HUD_SPACING * 2)
         right_rect = pygame.Rect(
             self.width - HUD_SPACING - HUD_RIGHT_PANEL_WIDTH,
             HUD_SPACING,
@@ -65,7 +72,7 @@ class Hud:
         self._draw_panel(center_rect)
         self._draw_panel(right_rect)
 
-        self._draw_health_bar(left_rect, state.health)
+        self._draw_health_bar(left_rect, state.health, state.next_hit_immune)
         self._draw_status(left_rect, state)
         self._draw_score(right_rect, state)
         self._draw_level(right_rect, state.level)
@@ -85,7 +92,7 @@ class Hud:
         self.surface.blit(label_surface, (x, y))
         self.surface.blit(value_surface, (x, y + label_surface.get_height() + 6))
 
-    def _draw_health_bar(self, rect, health):
+    def _draw_health_bar(self, rect, health, shield_active):
         x = rect.x + 22
         y = rect.y + 18
         bar_width = rect.width - 44
@@ -107,7 +114,7 @@ class Hud:
         )
         pygame.draw.rect(
             self.surface,
-            HEALTH_FILL_COLOR,
+            HEALTH_SHIELD_FILL_COLOR if shield_active else HEALTH_FILL_COLOR,
             (x, bar_y, round(bar_width * ratio), bar_height),
             border_radius=14,
         )
@@ -123,14 +130,59 @@ class Hud:
         status = state.status.value
         dot_color = STATUS_COLORS.get(status, TEXT_COLOR)
         x = rect.x + 22
-        y = rect.y + 128
-        label = self.text_font.render("Status", True, MUTED_TEXT_COLOR)
-        value = self.text_font.render(status.title(), True, TEXT_COLOR)
-        self.surface.blit(label, (x, y))
-        value_y = y + 32
-        value_rect = value.get_rect(topleft=(x + 30, value_y))
-        pygame.draw.circle(self.surface, dot_color, (x + 12, value_rect.centery), 8)
-        self.surface.blit(value, value_rect)
+        effect_y = rect.y + 136
+        effect_width = rect.width - 44
+        column_width = (effect_width - EFFECT_COLUMN_GAP) // 2
+        left_x = x
+        right_x = x + column_width + EFFECT_COLUMN_GAP
+
+        self._draw_effect_text(left_x, effect_y, self._format_status(state), dot_color)
+        self._draw_effect_text(right_x, effect_y, self._format_speed(state))
+        effect_y += self.effect_font.get_height() + EFFECT_ROW_GAP
+        self._draw_effect_text(left_x, effect_y, self._format_damage(state))
+        self._draw_effect_text(right_x, effect_y, self._format_score_effect(state))
+        effect_y += self.effect_font.get_height() + EFFECT_ROW_GAP
+        self._draw_effect_text(left_x, effect_y, self._format_special(state))
+
+    def _draw_effect_text(self, x, y, text, value_color=TEXT_COLOR):
+        effect_surface = self.effect_font.render(text, True, value_color)
+        self.surface.blit(effect_surface, (x, y))
+
+    def _format_status(self, state):
+        label = state.status.value.title()
+        if state.status == Status.NORMAL:
+            return f"Status: {label}"
+        return f"Status: {label} ({state.status_turns})"
+
+    def _format_speed(self, state):
+        if state.speed_effect == SpeedEffect.NORMAL:
+            return "Speed: Normal"
+        label = "Slower" if state.speed_effect == SpeedEffect.SLOWER else "Faster"
+        return f"Speed: {label} ({state.speed_turns})"
+
+    def _format_damage(self, state):
+        if state.damage_effect == DamageEffect.NORMAL:
+            return "Damage: Normal"
+        label = "Reduced" if state.damage_effect == DamageEffect.REDUCED else "Increased"
+        return f"Damage: {label} ({state.damage_turns})"
+
+    def _format_score_effect(self, state):
+        if state.score_effect == ScoreEffect.NORMAL:
+            return "Score: Normal"
+        label = "Boosted" if state.score_effect == ScoreEffect.BOOSTED else "Reduced"
+        return f"Score: {label} ({state.score_turns})"
+
+    def _format_special(self, state):
+        if state.special_effect == SpecialEffect.NONE:
+            return "Special: None"
+
+        labels = {
+            SpecialEffect.DEBUFF_IMMUNE: "Debuff Imm.",
+            SpecialEffect.HEAL_BLOCKED: "Heal Blocked",
+            SpecialEffect.BUFF_BLOCKED: "Buff Blocked",
+            SpecialEffect.VISUAL_DEBUFF: "Hazards Dim",
+        }
+        return f"Special: {labels[state.special_effect]} ({state.special_turns})"
 
     def _draw_score(self, rect, state):
         self._draw_label_value("Score", state.score, rect.x + 22, rect.y + 18)

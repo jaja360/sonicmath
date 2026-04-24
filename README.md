@@ -18,22 +18,35 @@ pause and resume the game.
 Power-ups spawn in a separate lane and are collected automatically on contact.
 They use their own spawn window, so they appear between hazards instead of at
 the same time. Power-downs replace some hazard spawns; answer correctly to jump
-over them and avoid their effect.
+over them and avoid their effect. Temporary effects last for a number of
+resolved questions, whether the answer was correct or not.
 
-### Implemented power-ups
+### Power-ups
 
 - Red potion: restore 10 HP
 - Blue potion: restore 20 HP
-- Coin+: doubles score reward for the next 5 cleared hazards
-- Stopwatch: slows the game for the next 5 cleared hazards
+- Coin+: boosts score rewards by 50% for 5 questions
+- Gift: reduce obstacle damage for 5 questions
+- Spring: reduce obstacle damage for 3 questions
+- Medical cross: debuff immunity for 5 questions
+- Pill: clear negative speed, damage, score and special effects
+- Clover: clear the current status
+- White square: clear negative effects and grant debuff immunity for 3 questions
+- Stopwatch: slows the game for 5 questions
+- Purple flask: clear all current negative effects
 - Red gem: ignores the next hit
 
-### Implemented power-downs
+### Power-downs
 
-- Fire: burned for 5 clears, lose 1 HP after each cleared hazard
-- Mushroom: poisoned for 5 clears, lose 2 HP after each cleared hazard
-- Crossed coin: halves score reward for the next 5 cleared hazards
-- Grey bomb: speeds up the game for the next 5 cleared hazards
+- Fire: burned for 5 questions, lose 1 HP after each resolved question
+- Mushroom: poisoned for 5 questions, lose 2 HP after each resolved question
+- Crossed gift: increase obstacle damage for 5 questions
+- Crossed spring: increase obstacle damage for 3 questions
+- Crossed medical cross: buffs are blocked for 5 questions
+- Crossed coin: reduce score rewards by 50% for 5 questions
+- Grey bomb: speeds up the game for 5 questions
+- Grey plus: healing is blocked for 5 questions
+- Black cloud: hazards are dimmed for 5 questions
 - Vortex: clears all active temporary effects
 
 ## Installation

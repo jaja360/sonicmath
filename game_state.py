@@ -37,6 +37,32 @@ class Status(Enum):
     POISONED = "poisoned"
 
 
+class SpeedEffect(Enum):
+    NORMAL = "normal"
+    SLOWER = "slower"
+    FASTER = "faster"
+
+
+class DamageEffect(Enum):
+    NORMAL = "normal"
+    REDUCED = "reduced"
+    INCREASED = "increased"
+
+
+class ScoreEffect(Enum):
+    NORMAL = "normal"
+    BOOSTED = "boosted"
+    REDUCED = "reduced"
+
+
+class SpecialEffect(Enum):
+    NONE = "none"
+    DEBUFF_IMMUNE = "debuff_immune"
+    HEAL_BLOCKED = "heal_blocked"
+    BUFF_BLOCKED = "buff_blocked"
+    VISUAL_DEBUFF = "visual_debuff"
+
+
 @dataclass
 class GameOptions:
     sound_enabled: bool = True
@@ -52,16 +78,20 @@ class GameState:
     correct_answers: int
     status: Status
     status_turns: int
+    speed_effect: SpeedEffect
+    speed_turns: int
+    damage_effect: DamageEffect
+    damage_turns: int
+    score_effect: ScoreEffect
+    score_turns: int
+    special_effect: SpecialEffect
+    special_turns: int
     answer_text: str
     background: Background
     music_player: MusicPlayer
     sonic: Sonic
     run_state: RunState = RunState.PLAYING
     base_speed: int = BASE_SPEED
-    score_boost_turns: int = 0
-    score_penalty_turns: int = 0
-    slow_turns: int = 0
-    speed_up_turns: int = 0
     next_hit_immune: bool = False
     current_hazard: Obstacle | PowerDown | None = None
     current_power_up: PowerUp | None = None
@@ -76,9 +106,9 @@ def get_speed_for_level(level):
 
 def get_effective_speed(state):
     speed = state.base_speed
-    if state.slow_turns > 0:
+    if state.speed_effect == SpeedEffect.SLOWER:
         speed -= 2 * SPEED_PER_LEVEL
-    if state.speed_up_turns > 0:
+    if state.speed_effect == SpeedEffect.FASTER:
         speed += 2 * SPEED_PER_LEVEL
     return speed
 
@@ -113,15 +143,34 @@ def sync_music(state):
     state.music_player.play(get_music_path(get_current_music_name(state)))
 
 
+def reset_modifier_categories(
+    state,
+    *,
+    clear_speed=True,
+    clear_damage=True,
+    clear_score=True,
+    clear_special=True,
+):
+    if clear_speed:
+        state.speed_effect = SpeedEffect.NORMAL
+        state.speed_turns = 0
+    if clear_damage:
+        state.damage_effect = DamageEffect.NORMAL
+        state.damage_turns = 0
+    if clear_score:
+        state.score_effect = ScoreEffect.NORMAL
+        state.score_turns = 0
+    if clear_special:
+        state.special_effect = SpecialEffect.NONE
+        state.special_turns = 0
+    refresh_speeds(state)
+
+
 def clear_temporary_effects(state):
-    state.score_boost_turns = 0
-    state.score_penalty_turns = 0
-    state.slow_turns = 0
-    state.speed_up_turns = 0
+    reset_modifier_categories(state)
     state.next_hit_immune = False
     state.status = Status.NORMAL
     state.status_turns = 0
-    refresh_speeds(state)
 
 
 def heal_health(state, amount):
@@ -129,48 +178,156 @@ def heal_health(state, amount):
     sync_music(state)
 
 
+def can_receive_buff(state):
+    return state.special_effect != SpecialEffect.BUFF_BLOCKED
+
+
+def can_receive_debuff(state):
+    return state.special_effect != SpecialEffect.DEBUFF_IMMUNE
+
+
+def can_heal(state):
+    return state.special_effect != SpecialEffect.HEAL_BLOCKED
+
+
+def is_negative_special(effect):
+    return effect in {
+        SpecialEffect.HEAL_BLOCKED,
+        SpecialEffect.BUFF_BLOCKED,
+        SpecialEffect.VISUAL_DEBUFF,
+    }
+
+
+def set_status(state, status, turns):
+    state.status = status
+    state.status_turns = turns
+
+
+def set_speed_effect(state, effect, turns):
+    state.speed_effect = effect
+    state.speed_turns = turns
+    refresh_speeds(state)
+
+
+def set_damage_effect(state, effect, turns):
+    state.damage_effect = effect
+    state.damage_turns = turns
+
+
+def set_score_effect(state, effect, turns):
+    state.score_effect = effect
+    state.score_turns = turns
+
+
+def set_special_effect(state, effect, turns):
+    state.special_effect = effect
+    state.special_turns = turns
+
+
+def clear_status(state):
+    state.status = Status.NORMAL
+    state.status_turns = 0
+
+
+def clear_negative_modifiers(state):
+    reset_modifier_categories(
+        state,
+        clear_speed=state.speed_effect == SpeedEffect.FASTER,
+        clear_damage=state.damage_effect == DamageEffect.INCREASED,
+        clear_score=state.score_effect == ScoreEffect.REDUCED,
+        clear_special=is_negative_special(state.special_effect),
+    )
+
+
+def clear_negative_effects(state):
+    clear_status(state)
+    clear_negative_modifiers(state)
+
+
+def get_effective_damage(state, base_damage):
+    if state.damage_effect == DamageEffect.REDUCED:
+        return max(1, (base_damage + 1) // 2)
+    if state.damage_effect == DamageEffect.INCREASED:
+        return max(1, (base_damage * 3 + 1) // 2)
+    return base_damage
+
+
 def get_score_reward(state):
     reward = POINTS_PER_CORRECT_ANSWER
-    if state.score_boost_turns > 0:
-        reward *= 2
-    if state.score_penalty_turns > 0:
+    if state.score_effect == ScoreEffect.BOOSTED:
+        reward = reward * 3 // 2
+    if state.score_effect == ScoreEffect.REDUCED:
         reward //= 2
     return reward
 
 
 def apply_power_up(state, effect_name):
-    if effect_name == "heal_small":
+    if effect_name == "heal_small" and can_heal(state):
         heal_health(state, 10)
         return
-    if effect_name == "heal_large":
+    if effect_name == "heal_large" and can_heal(state):
         heal_health(state, 20)
         return
-    if effect_name == "score_boost":
-        state.score_boost_turns = POINT_EFFECT_DURATION
+    if effect_name == "score_boost" and can_receive_buff(state):
+        set_score_effect(state, ScoreEffect.BOOSTED, POINT_EFFECT_DURATION)
         return
-    if effect_name == "slow_time":
-        state.slow_turns = SPEED_EFFECT_DURATION
-        refresh_speeds(state)
+    if effect_name == "damage_reduce_long" and can_receive_buff(state):
+        set_damage_effect(state, DamageEffect.REDUCED, 5)
+        return
+    if effect_name == "damage_reduce_short" and can_receive_buff(state):
+        set_damage_effect(state, DamageEffect.REDUCED, 3)
+        return
+    if effect_name == "debuff_immunity" and can_receive_buff(state):
+        set_special_effect(state, SpecialEffect.DEBUFF_IMMUNE, 5)
+        return
+    if effect_name == "clear_debuffs":
+        clear_negative_modifiers(state)
+        return
+    if effect_name == "clear_status":
+        clear_status(state)
+        return
+    if effect_name == "cleanse_and_immunity":
+        clear_negative_effects(state)
+        if can_receive_buff(state):
+            set_special_effect(state, SpecialEffect.DEBUFF_IMMUNE, 3)
+        return
+    if effect_name == "slow_time" and can_receive_buff(state):
+        set_speed_effect(state, SpeedEffect.SLOWER, SPEED_EFFECT_DURATION)
+        return
+    if effect_name == "full_cleanse":
+        clear_negative_effects(state)
         return
     if effect_name == "shield":
         state.next_hit_immune = True
 
 
 def apply_power_down(state, effect_name):
-    if effect_name == "burn":
-        state.status = Status.BURNED
-        state.status_turns = STATUS_EFFECT_DURATION
+    if effect_name == "burn" and can_receive_debuff(state):
+        set_status(state, Status.BURNED, STATUS_EFFECT_DURATION)
         return
-    if effect_name == "poison":
-        state.status = Status.POISONED
-        state.status_turns = STATUS_EFFECT_DURATION
+    if effect_name == "poison" and can_receive_debuff(state):
+        set_status(state, Status.POISONED, STATUS_EFFECT_DURATION)
         return
-    if effect_name == "score_penalty":
-        state.score_penalty_turns = POINT_EFFECT_DURATION
+    if effect_name == "damage_up_long" and can_receive_debuff(state):
+        set_damage_effect(state, DamageEffect.INCREASED, 5)
         return
-    if effect_name == "speed_up":
-        state.speed_up_turns = SPEED_EFFECT_DURATION
-        refresh_speeds(state)
+    if effect_name == "damage_up_short" and can_receive_debuff(state):
+        set_damage_effect(state, DamageEffect.INCREASED, 3)
+        return
+    if effect_name == "buff_blocked" and can_receive_debuff(state):
+        set_special_effect(state, SpecialEffect.BUFF_BLOCKED, 5)
+        return
+    if effect_name == "score_penalty" and can_receive_debuff(state):
+        set_score_effect(state, ScoreEffect.REDUCED, POINT_EFFECT_DURATION)
+        return
+    if effect_name == "speed_up" and can_receive_debuff(state):
+        set_speed_effect(state, SpeedEffect.FASTER, SPEED_EFFECT_DURATION)
+        return
+    if effect_name == "heal_blocked" and can_receive_debuff(state):
+        set_special_effect(state, SpecialEffect.HEAL_BLOCKED, 5)
+        return
+    if effect_name == "visual_debuff" and can_receive_debuff(state):
+        set_special_effect(state, SpecialEffect.VISUAL_DEBUFF, 5)
         return
     if effect_name == "purge":
         clear_temporary_effects(state)
@@ -180,19 +337,27 @@ def tick_effects_after_question(state):
     if state.status == Status.BURNED and state.status_turns > 0:
         lose_health(state, 1)
         state.status_turns -= 1
-    if state.status == Status.POISONED and state.status_turns > 0:
+    elif state.status == Status.POISONED and state.status_turns > 0:
         lose_health(state, 2)
         state.status_turns -= 1
-    if state.score_boost_turns > 0:
-        state.score_boost_turns -= 1
-    if state.score_penalty_turns > 0:
-        state.score_penalty_turns -= 1
-    if state.slow_turns > 0:
-        state.slow_turns -= 1
-    if state.speed_up_turns > 0:
-        state.speed_up_turns -= 1
     if state.status_turns == 0:
         state.status = Status.NORMAL
+    if state.speed_turns > 0:
+        state.speed_turns -= 1
+        if state.speed_turns == 0:
+            state.speed_effect = SpeedEffect.NORMAL
+    if state.damage_turns > 0:
+        state.damage_turns -= 1
+        if state.damage_turns == 0:
+            state.damage_effect = DamageEffect.NORMAL
+    if state.score_turns > 0:
+        state.score_turns -= 1
+        if state.score_turns == 0:
+            state.score_effect = ScoreEffect.NORMAL
+    if state.special_turns > 0:
+        state.special_turns -= 1
+        if state.special_turns == 0:
+            state.special_effect = SpecialEffect.NONE
     refresh_speeds(state)
 
 
@@ -239,6 +404,14 @@ def create_initial_gamestate(screen_width, scene_height, hud_height, options):
         correct_answers=0,
         status=Status.NORMAL,
         status_turns=0,
+        speed_effect=SpeedEffect.NORMAL,
+        speed_turns=0,
+        damage_effect=DamageEffect.NORMAL,
+        damage_turns=0,
+        score_effect=ScoreEffect.NORMAL,
+        score_turns=0,
+        special_effect=SpecialEffect.NONE,
+        special_turns=0,
         answer_text="",
         background=background,
         music_player=music_player,
@@ -345,7 +518,7 @@ def handle_obstacle_collisions(state):
         lose_health(state, 0, trigger_hit_animation=True)
     else:
         state.music_player.play_sound("impact")
-        lose_health(state, hazard.damage, trigger_hit_animation=True)
+        lose_health(state, get_effective_damage(state, hazard.damage), trigger_hit_animation=True)
         tick_effects_after_question(state)
     advance_problem(state)
 

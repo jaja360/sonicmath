@@ -11,8 +11,13 @@ GROUND_OFFSET = 20
 POWER_DOWN_EFFECTS = {
     0: "burn",
     1: "poison",
+    2: "damage_up_long",
+    3: "damage_up_short",
+    4: "buff_blocked",
     5: "score_penalty",
     6: "speed_up",
+    7: "heal_blocked",
+    8: "visual_debuff",
     9: "purge",
 }
 
