@@ -28,6 +28,12 @@ HUD_CENTER_SECTION_GAP = 24
 EFFECT_ROW_GAP = 14
 EFFECT_COLUMN_GAP = 50
 EFFECT_LABEL_GAP = 12
+SPECIAL_LABELS = {
+    SpecialEffect.DEBUFF_IMMUNE: "Debuff Immune",
+    SpecialEffect.HEAL_BLOCKED: "Heal Blocked",
+    SpecialEffect.BUFF_BLOCKED: "Buff Blocked",
+    SpecialEffect.VISUAL_DEBUFF: "Hazards Dimmed",
+}
 
 
 class Hud:
@@ -129,8 +135,7 @@ class Hud:
         )
 
     def _draw_status(self, rect, state):
-        status = state.status.value
-        dot_color = STATUS_COLORS.get(status, TEXT_COLOR)
+        dot_color = STATUS_COLORS.get(state.status.value, TEXT_COLOR)
         x = rect.x + 22
         effect_y = rect.y + 136
         effect_width = rect.width - 44
@@ -139,14 +144,19 @@ class Hud:
         right_x = x + column_width + EFFECT_COLUMN_GAP
         divider_x = left_x + column_width + EFFECT_COLUMN_GAP // 2
         divider_top = effect_y - 2
+        effect_rows = (
+            ((self._format_status(state), dot_color), (self._format_speed(state), TEXT_COLOR)),
+            ((self._format_damage(state), TEXT_COLOR), (self._format_score_effect(state), TEXT_COLOR)),
+        )
 
-        self._draw_effect_row(left_x, effect_y, column_width, *self._format_status(state), value_color=dot_color)
-        self._draw_effect_row(right_x, effect_y, column_width, *self._format_speed(state))
-        effect_y += self.effect_font.get_height() + EFFECT_ROW_GAP
-        self._draw_effect_row(left_x, effect_y, column_width, *self._format_damage(state))
-        self._draw_effect_row(right_x, effect_y, column_width, *self._format_score_effect(state))
+        for left_cell, right_cell in effect_rows:
+            (left_label, left_value), left_color = left_cell
+            (right_label, right_value), right_color = right_cell
+            self._draw_effect_row(left_x, effect_y, column_width, left_label, left_value, value_color=left_color)
+            self._draw_effect_row(right_x, effect_y, column_width, right_label, right_value, value_color=right_color)
+            effect_y += self.effect_font.get_height() + EFFECT_ROW_GAP
+
         divider_bottom = effect_y + self.effect_font.get_height() + 2
-        effect_y += self.effect_font.get_height() + EFFECT_ROW_GAP
         self._draw_effect_row(left_x, effect_y, effect_width, *self._format_special(state))
         pygame.draw.line(self.surface, PANEL_DIVIDER_COLOR, (divider_x, divider_top), (divider_x, divider_bottom), 2)
 
@@ -187,13 +197,7 @@ class Hud:
         if state.special_effect == SpecialEffect.NONE:
             return "Special effect", "None"
 
-        labels = {
-            SpecialEffect.DEBUFF_IMMUNE: "Debuff Immune",
-            SpecialEffect.HEAL_BLOCKED: "Heal Blocked",
-            SpecialEffect.BUFF_BLOCKED: "Buff Blocked",
-            SpecialEffect.VISUAL_DEBUFF: "Hazards Dimmed",
-        }
-        return "Special effect", f"{labels[state.special_effect]} ({state.special_turns})"
+        return "Special effect", f"{SPECIAL_LABELS[state.special_effect]} ({state.special_turns})"
 
     def _draw_score(self, rect, state):
         self._draw_label_value("Score", state.score, rect.x + 22, rect.y + 18)

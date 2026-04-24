@@ -23,6 +23,19 @@ STATUS_EFFECT_DURATION = 5
 HAZARD_POWER_DOWN_CHANCE = 0.30
 POWER_UP_SPAWN_CHANCE = 0.30
 
+POWER_UP_HEALTH_EFFECTS = {
+    "heal_small": 10,
+    "heal_large": 20,
+}
+POWER_UP_DAMAGE_EFFECTS = {
+    "damage_reduce_long": 5,
+    "damage_reduce_short": 3,
+}
+POWER_DOWN_DAMAGE_EFFECTS = {
+    "damage_up_long": 5,
+    "damage_up_short": 3,
+}
+
 
 class RunState(Enum):
     PLAYING = auto()
@@ -229,6 +242,21 @@ def clear_status(state):
     state.status_turns = 0
 
 
+def clear_inactive_sprite(state, attribute_name):
+    sprite = getattr(state, attribute_name)
+    if sprite is not None and not sprite.alive():
+        setattr(state, attribute_name, None)
+
+
+def clear_active_sprite(state, attribute_name):
+    sprite = getattr(state, attribute_name)
+    if sprite is None:
+        return
+
+    sprite.kill()
+    setattr(state, attribute_name, None)
+
+
 def clear_negative_modifiers(state):
     reset_modifier_categories(
         state,
@@ -262,21 +290,22 @@ def get_score_reward(state):
 
 
 def apply_power_up(state, effect_name):
-    if effect_name == "heal_small" and can_heal(state):
-        heal_health(state, 10)
+    heal_amount = POWER_UP_HEALTH_EFFECTS.get(effect_name)
+    if heal_amount is not None:
+        if can_heal(state):
+            heal_health(state, heal_amount)
         return
-    if effect_name == "heal_large" and can_heal(state):
-        heal_health(state, 20)
-        return
+
     if effect_name == "score_boost" and can_receive_buff(state):
         set_score_effect(state, ScoreEffect.BOOSTED, POINT_EFFECT_DURATION)
         return
-    if effect_name == "damage_reduce_long" and can_receive_buff(state):
-        set_damage_effect(state, DamageEffect.REDUCED, 5)
+
+    damage_turns = POWER_UP_DAMAGE_EFFECTS.get(effect_name)
+    if damage_turns is not None:
+        if can_receive_buff(state):
+            set_damage_effect(state, DamageEffect.REDUCED, damage_turns)
         return
-    if effect_name == "damage_reduce_short" and can_receive_buff(state):
-        set_damage_effect(state, DamageEffect.REDUCED, 3)
-        return
+
     if effect_name == "debuff_immunity" and can_receive_buff(state):
         set_special_effect(state, SpecialEffect.DEBUFF_IMMUNE, 5)
         return
@@ -308,12 +337,13 @@ def apply_power_down(state, effect_name):
     if effect_name == "poison" and can_receive_debuff(state):
         set_status(state, Status.POISONED, STATUS_EFFECT_DURATION)
         return
-    if effect_name == "damage_up_long" and can_receive_debuff(state):
-        set_damage_effect(state, DamageEffect.INCREASED, 5)
+
+    damage_turns = POWER_DOWN_DAMAGE_EFFECTS.get(effect_name)
+    if damage_turns is not None:
+        if can_receive_debuff(state):
+            set_damage_effect(state, DamageEffect.INCREASED, damage_turns)
         return
-    if effect_name == "damage_up_short" and can_receive_debuff(state):
-        set_damage_effect(state, DamageEffect.INCREASED, 3)
-        return
+
     if effect_name == "buff_blocked" and can_receive_debuff(state):
         set_special_effect(state, SpecialEffect.BUFF_BLOCKED, 5)
         return
@@ -438,22 +468,16 @@ def spawn_power_up(state, screen_width):
 
 
 def clear_inactive_obstacle(state):
-    if state.current_hazard is not None and not state.current_hazard.alive():
-        state.current_hazard = None
+    clear_inactive_sprite(state, "current_hazard")
 
 
 def clear_inactive_power_up(state):
-    if state.current_power_up is not None and not state.current_power_up.alive():
-        state.current_power_up = None
+    clear_inactive_sprite(state, "current_power_up")
 
 
 def trigger_endgame(state):
-    if state.current_hazard is not None:
-        state.current_hazard.kill()
-        state.current_hazard = None
-    if state.current_power_up is not None:
-        state.current_power_up.kill()
-        state.current_power_up = None
+    clear_active_sprite(state, "current_hazard")
+    clear_active_sprite(state, "current_power_up")
     state.run_state = RunState.ENDGAME
     sync_music(state)
     state.sonic.set_state(SonicState.RUN_ENDGAME)
@@ -529,5 +553,4 @@ def handle_power_up_collection(state):
 
     state.music_player.play_sound("powerUp")
     apply_power_up(state, state.current_power_up.effect_name)
-    state.current_power_up.kill()
-    state.current_power_up = None
+    clear_active_sprite(state, "current_power_up")
