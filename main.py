@@ -39,6 +39,7 @@ PAUSE_TITLE_COLOR = (241, 246, 255)
 PAUSE_TITLE_SHADOW = (24, 31, 48)
 PAUSE_TEXT_COLOR = (188, 204, 232)
 TARGET_FPS = 60
+WINDOW_BACKGROUND_COLOR = (0, 0, 0)
 
 
 def parse_args():
@@ -46,6 +47,7 @@ def parse_args():
     parser.add_argument("--no-sound", action="store_true", help="disable music playback")
     parser.add_argument("--start-level", type=int, default=0, help="start the first run at this level")
     parser.add_argument("--start-hp", type=int, default=100, help="start the game with this many HP")
+    parser.add_argument("--fullscreen", action="store_true", help="start in fullscreen mode")
     args = parser.parse_args()
     if not 0 <= args.start_level < 25:
         parser.error("--start-level must be between 0 and 24")
@@ -124,11 +126,33 @@ def reset_game(updatable, drawable, options):
     return create_initial_gamestate(SCREEN_WIDTH, SCENE_HEIGHT, HUD_HEIGHT, options)
 
 
-def create_screen():
+def create_screen(fullscreen=False):
+    flags = pygame.RESIZABLE
+    size = (SCREEN_WIDTH, SCREEN_HEIGHT)
+    if fullscreen:
+        flags |= pygame.FULLSCREEN
+        size = (0, 0)
+
     try:
-        return pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), vsync=1)
+        return pygame.display.set_mode(size, flags=flags, vsync=1)
     except TypeError:
-        return pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        return pygame.display.set_mode(size, flags=flags)
+
+
+def present_screen(window, game_surface):
+    window_width, window_height = window.get_size()
+    scale = min(window_width / SCREEN_WIDTH, window_height / SCREEN_HEIGHT)
+    scaled_width = round(SCREEN_WIDTH * scale)
+    scaled_height = round(SCREEN_HEIGHT * scale)
+    x = (window_width - scaled_width) // 2
+    y = (window_height - scaled_height) // 2
+
+    window.fill(WINDOW_BACKGROUND_COLOR)
+    if scaled_width == SCREEN_WIDTH and scaled_height == SCREEN_HEIGHT:
+        window.blit(game_surface, (x, y))
+    else:
+        scaled_surface = pygame.transform.scale(game_surface, (scaled_width, scaled_height))
+        window.blit(scaled_surface, (x, y))
 
 
 def main():
@@ -144,7 +168,9 @@ def main():
     print(f"Screen width: {SCREEN_WIDTH}\nScreen height: {SCREEN_HEIGHT}")
     pygame.init()
     pygame.key.set_repeat(200, 30)
-    screen = create_screen()
+    is_fullscreen = args.fullscreen
+    window = create_screen(is_fullscreen)
+    screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
@@ -171,6 +197,10 @@ def main():
                     else:
                         state.run_state = RunState.PLAYING
                         state.music_player.unpause()
+                    continue
+                if event.key == pygame.K_F11:
+                    is_fullscreen = not is_fullscreen
+                    window = create_screen(is_fullscreen)
                     continue
 
                 if state.run_state == RunState.PAUSED:
@@ -219,6 +249,7 @@ def main():
         elif state.run_state == RunState.PAUSED:
             draw_pause_menu(screen)
 
+        present_screen(window, screen)
         pygame.display.flip()
 
 
